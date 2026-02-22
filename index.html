@@ -16,22 +16,24 @@
     #main-container { flex: 1; height: 100%; position: relative; background: #000; }
     #main { width: 100%; height: 100%; }
     
-    h3 { color: var(--accent); font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; margin: 20px 0 12px; }
+    h3 { color: var(--accent); font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; margin: 25px 0 12px; }
     .control-group { margin-bottom: 20px; }
     label { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 8px; }
-    .slider-hint { font-size: 10px; color: #666; margin-top: -4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .slider-hint { font-size: 10px; color: #666; margin-top: -6px; margin-bottom: 6px; display: flex; justify-content: space-between; }
     input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; }
     .val-disp { color: var(--accent); font-weight: bold; }
     
-    .barrel-btn { width: 100%; padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ccc; border-radius: 8px; cursor: pointer; font-size: 12px; text-align: left; transition: 0.3s; }
+    .barrel-btn { width: 100%; padding: 10px; margin-bottom: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ccc; border-radius: 6px; cursor: pointer; font-size: 11px; text-align: left; transition: 0.3s; }
     .barrel-btn:hover { background: rgba(197, 168, 128, 0.2); }
+    .barrel-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(197, 168, 128, 0.1); }
     .dl-btn { text-align: center; font-weight: bold; margin-top: 10px; border-color: var(--accent); color: #fff; background: rgba(197, 168, 128, 0.3); }
+    .dl-btn:hover { background: rgba(197, 168, 128, 0.5); }
 
     select.barrel-select { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(197, 168, 128, 0.5); color: var(--accent); border-radius: 6px; font-size: 13px; outline: none; cursor: pointer; margin-bottom: 5px; }
     select.barrel-select option { background: #1a1a1a; color: #fff; }
     .cask-label { font-size: 11px; color: #888; margin-bottom: 4px; }
 
-    /* --- スマホ専用のUI調整 --- */
+    /* --- スマホ専用のUI調整（完璧版） --- */
     @media (max-width: 768px) {
       body { flex-direction: column-reverse; }
       #sidebar { width: 100%; height: 50vh; border-right: none; border-top: 1px solid rgba(197, 168, 128, 0.3); padding: 20px 25px 40px; }
@@ -46,11 +48,11 @@
   <div style="font-size: 22px; font-weight: bold; color: var(--accent); margin-bottom: 5px;">Amber Nexus</div>
   <div style="font-size: 10px; color: #888; margin-bottom: 15px;">Tasting Topology System</div>
 
-  <h3>山崎 垂直比較 (Yamazaki Vertical)</h3>
+  <h3>銘柄プリセット (Presets)</h3>
   <div class="control-group">
-    <button class="barrel-btn" onclick="applyPreset('yamazaki_nas')">🍓 山崎 NAS (ワイン樽由来の華やかさ)</button>
-    <button class="barrel-btn" onclick="applyPreset('yamazaki_12y')">🍁 山崎 12年 (黄金のミズナラバランス)</button>
-    <button class="barrel-btn" onclick="applyPreset('yamazaki_18y')">🍷 山崎 18年 (重厚なシェリーと深み)</button>
+    <button class="barrel-btn" onclick="applyPreset('macallan')">🥃 ザ・マッカラン 12年 (Sherry)</button>
+    <button class="barrel-btn" onclick="applyPreset('nectardor')">🍯 ネクタードール (Sauternes)</button>
+    <button class="barrel-btn" onclick="applyPreset('yamazaki')">🍁 山崎 12年 (Mizunara layers)</button>
   </div>
 
   <h3>基本骨格 (Core Specs)</h3>
@@ -69,22 +71,32 @@
   <div class="control-group">
     <div class="cask-label">Base Cask (基本樽)</div>
     <select id="s-barrel" class="barrel-select" onchange="syncParam()">
-      <option value="bourbon">● Bourbon (バニラ・蜂蜜)</option>
-      <option value="american_oak" selected>● American Oak (バニラ・レモン)</option>
+      <option value="reset">● Standard (基本)</option>
+      <option value="bourbon" selected>● Bourbon (バニラ・蜂蜜)</option>
+      <option value="american_oak">● American Oak (バニラ・レモン)</option>
       <option value="european_oak">■ European Oak (重厚・タンニン)</option>
       <option value="mizunara">▲ Mizunara (香木・スパイス)</option>
       <option value="px_sherry">◆ PX Sherry (極甘口・レーズン)</option>
-      <option value="port">◆ Port Wine (赤ベリー・プラム)</option>
     </select>
+
     <div class="cask-label" style="margin-top: 10px;">Finish Cask (後熟)</div>
     <select id="s-finish" class="barrel-select" onchange="syncParam()">
       <option value="none">なし (None)</option>
-      <option value="mizunara">▲ Mizunara (香木・スパイス)</option>
       <option value="sauternes">◆ Sauternes (貴腐ワイン・華やか)</option>
       <option value="px_sherry">◆ PX Sherry (極甘口・レーズン)</option>
+      <option value="port">◆ Port Wine (赤ベリー・プラム)</option>
+      <option value="mizunara">▲ Mizunara (香木・スパイス)</option>
+      <option value="beer">■ Beer/IPA/Stout (ホップ・珈琲)</option>
+      <option value="rum">● Rum (黒糖・トロピカル)</option>
     </select>
   </div>
   
+  <div class="control-group">
+    <label>Cask Size (樽の大きさ) <span class="val-disp" id="v-size">3</span></label>
+    <div class="slider-hint"><span>Octave (密集)</span><span>Butt (拡散)</span></div>
+    <input type="range" id="i-size" min="1" max="5" value="3" oninput="syncParam()">
+  </div>
+
   <h3>テクスチャー (Mouthfeel)</h3>
   <div class="control-group">
     <label>Body (粘度・重さ) <span class="val-disp" id="v-body">5</span></label>
@@ -93,6 +105,10 @@
   <div class="control-group">
     <label>Crisp (キレ・鮮度) <span class="val-disp" id="v-crisp">5</span></label>
     <input type="range" id="i-crisp" min="1" max="10" value="5" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Heat (熱量・アタック) <span class="val-disp" id="v-heat">5</span></label>
+    <input type="range" id="i-heat" min="1" max="10" value="5" oninput="syncParam()">
   </div>
   <div class="control-group">
     <label>Grip (収斂味・樽渋) <span class="val-disp" id="v-grip">5</span></label>
@@ -109,9 +125,18 @@
     <input type="range" id="i-woody" min="0" max="10" value="5" oninput="syncParam()">
   </div>
 
-  <button class="barrel-btn dl-btn" onclick="downloadImage()">📸 画像として保存</button>
-  <div style="height: 40px;"></div>
-</div>
+  <h3>強度 (Intensity)</h3>
+  <div class="control-group">
+    <label>Aroma (香りの広がり) <span class="val-disp" id="v-aroma">3</span></label>
+    <input type="range" id="i-aroma" min="1" max="5" value="3" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Finish (余韻の揺れ) <span class="val-disp" id="v-finish">2</span></label>
+    <input type="range" id="i-finish" min="1" max="5" value="2" oninput="syncParam()">
+  </div>
+
+  <button class="barrel-btn dl-btn" onclick="downloadImage()">📸 トポロジーを画像で保存</button>
+  <div style="height: 30px;"></div> </div>
 
 <div id="main-container">
   <div id="main"></div>
@@ -120,45 +145,56 @@
 <script>
   let myChart;
   let params = {
-    barrel: 'american_oak', finish: 'mizunara', caskSize: 3,
+    barrel: 'bourbon', finish: 'none', caskSize: 3,
     spec: { age: 12, abv: 43 },
     texture: { body: 5, crisp: 5, heat: 5, grip: 5 },
     matrix: { sweet: 5, woody: 5 },
-    intensity: { aroma: 4, finish: 3 }
+    intensity: { aroma: 3, finish: 2 }
   };
 
+  // プリセットデータ
   const presetData = {
-    yamazaki_nas: {
-      barrel: 'port', finish: 'mizunara', spec: { age: 8, abv: 43 },
-      texture: { body: 4, crisp: 8, heat: 6, grip: 3 }, matrix: { sweet: 7, woody: 4 }, intensity: { aroma: 5, finish: 2 }
+    macallan: {
+      barrel: 'px_sherry', finish: 'none', caskSize: 4, spec: { age: 12, abv: 40 },
+      texture: { body: 8, crisp: 3, heat: 3, grip: 7 }, matrix: { sweet: 8, woody: 7 }, intensity: { aroma: 4, finish: 4 }
     },
-    yamazaki_12y: {
-      barrel: 'american_oak', finish: 'mizunara', spec: { age: 12, abv: 43 },
-      texture: { body: 6, crisp: 5, heat: 4, grip: 5 }, matrix: { sweet: 6, woody: 6 }, intensity: { aroma: 4, finish: 4 }
+    nectardor: {
+      barrel: 'bourbon', finish: 'sauternes', caskSize: 3, spec: { age: 12, abv: 46 },
+      texture: { body: 6, crisp: 5, heat: 5, grip: 3 }, matrix: { sweet: 7, woody: 4 }, intensity: { aroma: 5, finish: 3 }
     },
-    yamazaki_18y: {
-      barrel: 'px_sherry', finish: 'mizunara', spec: { age: 18, abv: 43 },
-      texture: { body: 9, crisp: 3, heat: 3, grip: 8 }, matrix: { sweet: 9, woody: 8 }, intensity: { aroma: 3, finish: 5 }
+    yamazaki: {
+      barrel: 'american_oak', finish: 'mizunara', caskSize: 3, spec: { age: 12, abv: 43 },
+      texture: { body: 5, crisp: 6, heat: 4, grip: 4 }, matrix: { sweet: 6, woody: 6 }, intensity: { aroma: 4, finish: 3 }
     }
   };
 
   const atlasData = {
-    american_oak: { notes: ["Vanilla", "Coconut", "Honey", "Oak", "Lemon"], color: "#f4d03f" },
-    mizunara:     { notes: ["Sandalwood", "Incense", "Spice", "Vanilla"], color: "#c5a880" },
-    px_sherry:    { notes: ["Raisin", "Chocolate", "Fig", "Plum"], color: "#8c3b3b" },
-    port:         { notes: ["Red Berry", "Plum", "Chocolate", "Floral"], color: "#782844" },
-    sauternes:    { notes: ["Apricot", "Honey", "Floral", "Lemon"], color: "#f1c40f" },
-    bourbon:      { notes: ["Vanilla", "Toffee", "Honey", "Oak"], color: "#f4d03f" },
-    none:         { notes: [], color: "#555" }
+    bourbon:      { notes: ["Vanilla", "Coconut", "Toffee", "Honey", "Oak"], color: "#f4d03f" },
+    american_oak: { notes: ["Vanilla", "Coconut", "Toffee", "Honey", "Oak", "Lemon"], color: "#f4d03f" },
+    european_oak: { notes: ["Raisin", "Chocolate", "Nutmeg", "Tannin", "Oak", "Spice"], color: "#5c3a21" },
+    mizunara:     { notes: ["Sandalwood", "Incense", "Spice", "Vanilla", "Coconut"], color: "#c5a880" },
+    px_sherry:    { notes: ["Raisin", "Chocolate", "Fig", "Syrup", "Plum"], color: "#8c3b3b" },
+    sauternes:    { notes: ["Apricot", "Honey", "Floral", "Lemon", "Syrup"], color: "#f1c40f" },
+    port:         { notes: ["Plum", "Red Berry", "Chocolate", "Spice", "Tannin"], color: "#782844" },
+    beer:         { notes: ["Hops", "Malt", "Coffee", "Chocolate", "Lemon"], color: "#d35400" },
+    rum:          { notes: ["Brown Sugar", "Banana", "Pineapple", "Molasses", "Vanilla"], color: "#d68910" },
+    none:         { notes: [], color: "#555" }, reset: { notes: [], color: "#555" }
   };
 
   const flavors = [
-    { n: "Vanilla", c: "sweet", score: 10, symbol: "circle" }, { n: "Honey", c: "sweet", score: 8, symbol: "circle" },
-    { n: "Raisin", c: "sweet", score: 9, symbol: "diamond" }, { n: "Red Berry", c: "sweet", score: 8, symbol: "diamond" },
-    { n: "Plum", c: "sweet", score: 7, symbol: "diamond" }, { n: "Sandalwood", c: "woody", score: 10, symbol: "triangle" },
-    { n: "Incense", c: "woody", score: 8, symbol: "triangle" }, { n: "Spice", c: "woody", score: 7, symbol: "triangle" },
-    { n: "Oak", c: "woody", score: 8, symbol: "rect" }, { n: "Chocolate", c: "sweet", score: 9, symbol: "rect" },
-    { n: "Tannin", c: "woody", score: 6, symbol: "rect" }, { n: "Fig", c: "sweet", score: 7, symbol: "diamond" }
+    { n: "Vanilla", c: "sweet", score: 10, symbol: "circle" }, { n: "Coconut", c: "sweet", score: 7, symbol: "circle" }, 
+    { n: "Toffee", c: "sweet", score: 8, symbol: "circle" }, { n: "Honey", c: "sweet", score: 8, symbol: "circle" },
+    { n: "Brown Sugar", c: "sweet", score: 9, symbol: "circle" }, { n: "Banana", c: "sweet", score: 8, symbol: "circle" },
+    { n: "Pineapple", c: "sweet", score: 8, symbol: "circle" }, { n: "Molasses", c: "sweet", score: 9, symbol: "circle" },
+    { n: "Malt", c: "sweet", score: 6, symbol: "circle" }, { n: "Raisin", c: "sweet", score: 8, symbol: "diamond" }, 
+    { n: "Fig", c: "sweet", score: 6, symbol: "diamond" }, { n: "Syrup", c: "sweet", score: 5, symbol: "diamond" },
+    { n: "Apricot", c: "sweet", score: 8, symbol: "diamond" }, { n: "Lemon", c: "sweet", score: 7, symbol: "diamond" },
+    { n: "Floral", c: "sweet", score: 8, symbol: "diamond" }, { n: "Plum", c: "sweet", score: 8, symbol: "diamond" },
+    { n: "Red Berry", c: "sweet", score: 7, symbol: "diamond" }, { n: "Oak", c: "woody", score: 8, symbol: "rect" }, 
+    { n: "Chocolate", c: "sweet", score: 9, symbol: "rect" }, { n: "Tannin", c: "woody", score: 6, symbol: "rect" },
+    { n: "Coffee", c: "woody", score: 8, symbol: "rect" }, { n: "Spice", c: "woody", score: 8, symbol: "triangle" }, 
+    { n: "Sandalwood", c: "woody", score: 9, symbol: "triangle" }, { n: "Incense", c: "woody", score: 6, symbol: "triangle" },
+    { n: "Nutmeg", c: "woody", score: 7, symbol: "triangle" }, { n: "Hops", c: "woody", score: 8, symbol: "triangle" }
   ];
 
   window.onload = function() {
@@ -167,23 +203,37 @@
     window.addEventListener('resize', () => { myChart.resize(); update(); });
   };
 
+  // 【新規】プリセット適用関数
   function applyPreset(id) {
     const p = presetData[id];
     document.getElementById('s-barrel').value = p.barrel;
     document.getElementById('s-finish').value = p.finish;
+    document.getElementById('i-size').value = p.caskSize;
     document.getElementById('i-age').value = p.spec.age;
     document.getElementById('i-abv').value = p.spec.abv;
     document.getElementById('i-body').value = p.texture.body;
     document.getElementById('i-crisp').value = p.texture.crisp;
+    document.getElementById('i-heat').value = p.texture.heat;
     document.getElementById('i-grip').value = p.texture.grip;
     document.getElementById('i-sweet').value = p.matrix.sweet;
     document.getElementById('i-woody').value = p.matrix.woody;
+    document.getElementById('i-aroma').value = p.intensity.aroma;
+    document.getElementById('i-finish').value = p.intensity.finish;
     syncParam();
   }
 
+  // 【新規】画像ダウンロード関数
   function downloadImage() {
-    const url = myChart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#000' });
-    const a = document.createElement('a'); a.download = 'yamazaki-topology.png'; a.href = url; a.click();
+    if(!myChart) return;
+    const url = myChart.getDataURL({
+      type: 'png',
+      pixelRatio: 2, // 高画質書き出し
+      backgroundColor: '#000' // 黒背景を維持
+    });
+    const a = document.createElement('a');
+    a.download = 'amber-nexus-topology.png';
+    a.href = url;
+    a.click();
   }
 
   function syncParam() {
@@ -191,55 +241,120 @@
     params.finish = document.getElementById('s-finish').value;
     params.spec.age = parseInt(document.getElementById('i-age').value);
     params.spec.abv = parseInt(document.getElementById('i-abv').value);
+    params.caskSize = parseInt(document.getElementById('i-size').value);
     params.texture.body = parseInt(document.getElementById('i-body').value);
     params.texture.crisp = parseInt(document.getElementById('i-crisp').value);
+    params.texture.heat = parseInt(document.getElementById('i-heat').value);
     params.texture.grip = parseInt(document.getElementById('i-grip').value);
     params.matrix.sweet = parseInt(document.getElementById('i-sweet').value);
     params.matrix.woody = parseInt(document.getElementById('i-woody').value);
+    params.intensity.aroma = parseInt(document.getElementById('i-aroma').value);
+    params.intensity.finish = parseInt(document.getElementById('i-finish').value);
+    
     document.getElementById('v-age').innerText = params.spec.age;
     document.getElementById('v-abv').innerText = params.spec.abv;
+    document.getElementById('v-size').innerText = params.caskSize;
     document.getElementById('v-body').innerText = params.texture.body;
     document.getElementById('v-crisp').innerText = params.texture.crisp;
+    document.getElementById('v-heat').innerText = params.texture.heat;
     document.getElementById('v-grip').innerText = params.texture.grip;
     document.getElementById('v-sweet').innerText = params.matrix.sweet;
     document.getElementById('v-woody').innerText = params.matrix.woody;
+    document.getElementById('v-aroma').innerText = params.intensity.aroma;
+    document.getElementById('v-finish').innerText = params.intensity.finish;
+    
     update();
   }
 
   function update() {
     if(!myChart) return;
-    const width = myChart.getWidth(), height = myChart.getHeight();
-    const coreGlow = 10 + (params.spec.age * 1.5);
+    const width = myChart.getWidth();
+    const height = myChart.getHeight();
+
+    let coreColor = '#c5a880';
+    if(params.texture.heat > 5) {
+        const heatRatio = (params.texture.heat - 5) / 5;
+        coreColor = heatRatio > 0.5 ? '#d97a33' : '#ce9159'; 
+    }
+    const coreGlow = 10 + (params.spec.age * 1.5) + (params.texture.heat * 2);
+
+    const shiftX = (params.matrix.sweet - 5) * 30;
+    const shiftY = (params.matrix.woody - 5) * 30;
+
     const nodes = [{
-      name: 'Amber Palette', symbolSize: 60, fixed: true,
-      itemStyle: { color: '#c5a880', shadowBlur: coreGlow, shadowColor: '#c5a880' },
-      x: (width / 2) + (params.matrix.sweet - 5) * 25,
-      y: (height / 2) + (params.matrix.woody - 5) * 25
+      name: 'Amber Palette', 
+      symbolSize: 60, 
+      itemStyle: { color: coreColor, shadowBlur: coreGlow, shadowColor: coreColor },
+      label: { show: true, position: 'inside', fontSize: 10, fontWeight: 'bold' },
+      x: (width / 2) + shiftX,
+      y: (height / 2) + shiftY,
+      fixed: true 
     }];
+    
     const links = [];
-    const baseAtlas = atlasData[params.barrel], finishAtlas = atlasData[params.finish];
+    const baseAtlas = atlasData[params.barrel];
+    const finishAtlas = atlasData[params.finish];
+    
+    const calculatedEdgeLength = 40 + (params.caskSize - 1) * 20;
+    const baseLineWidth = 0.5 + (params.texture.body * 0.3);
 
     flavors.forEach(f => {
-      const isBase = baseAtlas.notes.includes(f.n), isFinish = finishAtlas.notes.includes(f.n);
-      if(!isBase && !isFinish) return;
+      const isBaseNote = baseAtlas.notes.includes(f.n);
+      const isFinishNote = finishAtlas.notes.includes(f.n);
+      const isActive = isBaseNote || isFinishNote;
+
+      if (!isActive) {
+        nodes.push({
+          name: f.n, symbol: f.symbol || 'circle', symbolSize: f.score * 2,
+          itemStyle: { color: '#444', opacity: 0.4 }
+        });
+        links.push({
+          source: 'Amber Palette', target: f.n, edgeLength: calculatedEdgeLength,
+          lineStyle: { width: baseLineWidth, color: 'rgba(255,255,255,0.1)' }
+        });
+        return;
+      }
+
+      let nodeColor, lineColor, lineType, lineWidth, edgeLen;
+      
+      if (isBaseNote && isFinishNote) {
+          nodeColor = baseAtlas.color; lineColor = baseAtlas.color; lineType = 'solid';
+          lineWidth = baseLineWidth * 3; edgeLen = calculatedEdgeLength * 0.8;
+      } else if (isBaseNote) {
+          nodeColor = baseAtlas.color; lineColor = baseAtlas.color; lineType = 'solid';
+          lineWidth = baseLineWidth * 2; edgeLen = calculatedEdgeLength;
+      } else {
+          nodeColor = finishAtlas.color; lineColor = finishAtlas.color; lineType = 'dashed'; 
+          lineWidth = baseLineWidth * 1.5; edgeLen = calculatedEdgeLength * 1.3; 
+      }
 
       nodes.push({
-        name: f.n, symbol: f.symbol, symbolSize: f.score * 3.5,
-        itemStyle: { color: isBase ? baseAtlas.color : finishAtlas.color }
+        name: f.n, symbol: f.symbol || 'circle', symbolSize: f.score * 3.5,
+        itemStyle: { color: nodeColor, opacity: 1 }
       });
+
       links.push({
-        source: 'Amber Palette', target: f.n,
-        edgeLength: isFinish ? 120 : 80,
-        lineStyle: { width: isBase && isFinish ? 5 : 2, type: isFinish ? 'dashed' : 'solid', color: isBase ? baseAtlas.color : finishAtlas.color }
+        source: 'Amber Palette', target: f.n, edgeLength: edgeLen,
+        lineStyle: { width: lineWidth, color: lineColor, type: lineType }
       });
     });
+
+    const explosionForce = (params.intensity.aroma * 50) + (params.spec.abv * 4);
+    
+    let integrationFriction = 0.05 + (params.spec.age * 0.015);
+    integrationFriction -= (params.texture.crisp * 0.005); 
+    if(integrationFriction < 0.01) integrationFriction = 0.01;
+
+    const gripGravity = 0.1 + (params.texture.grip * 0.04) - (params.intensity.finish * 0.02);
 
     myChart.setOption({
       backgroundColor: '#000',
       series: [{
         type: 'graph', layout: 'force', data: nodes, links: links,
-        label: { show: true, position: 'top', color: '#fff' },
-        force: { repulsion: 250 + (params.spec.abv * 2), gravity: 0.1 + (params.texture.grip * 0.03), friction: 0.05 + (params.spec.age * 0.01) }
+        left: 'center', top: 'middle',
+        label: { show: true, position: 'top', color: '#fff', fontSize: 11 },
+        force: { repulsion: explosionForce, gravity: gripGravity, friction: integrationFriction },
+        roam: true, draggable: true
       }]
     });
   }
