@@ -25,6 +25,23 @@
     select.barrel-select { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(197, 168, 128, 0.5); color: var(--accent); border-radius: 4px; font-size: 12px; outline: none; cursor: pointer; margin-bottom: 5px; }
     select.barrel-select option { background: #1a1a1a; color: #fff; }
     .cask-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+	  @media (max-width: 768px) {
+      body { 
+        flex-direction: column-reverse; 
+      }
+      #sidebar { 
+        width: 100%; 
+        height: 50vh; 
+        border-right: none; 
+        border-top: 1px solid rgba(197, 168, 128, 0.3); 
+      }
+      #main-container { 
+        width: 100%; 
+        height: 50vh; 
+      }
+    }
+	  
+	  
   </style>
 </head>
 <body>
@@ -318,22 +335,7 @@
       }]
     });
   }
-/* --- スマホ用レスポンシブ対応 --- */
-    @media (max-width: 768px) {
-      body { 
-        flex-direction: column-reverse; /* グラフを上、パネルを下にする */
-      }
-      #sidebar { 
-        width: 100%; 
-        height: 50vh; /* 画面の下半分をパネルに */
-        border-right: none; 
-        border-top: 1px solid rgba(197, 168, 128, 0.3); 
-      }
-      #main-container { 
-        width: 100%; 
-        height: 50vh; /* 画面の上半分をグラフに */
-      }
-    }
+
 </script>
 </body>
 </html>
