@@ -30,23 +30,24 @@
     .cask-label { font-size: 11px; color: #888; margin-bottom: 4px; }
 
     /* --- スマホ専用のUI調整 --- */
+/* --- スマホ専用のUI調整 --- */
     @media (max-width: 768px) {
       body { 
-        flex-direction: column; /* スマホでは グラフが上、パネルが下 */
+        flex-direction: column-reverse; /* ← ここに -reverse を追加！これで上下が逆転します */
       }
       #sidebar { 
         width: 100%; 
-        height: 50vh; /* 画面下半分をスクロール領域に */
+        height: 50vh; /* 高さのバランスは50vhのまま */
         border-right: none; 
-        border-top: 1px solid rgba(197, 168, 128, 0.3); 
-        padding: 20px 25px 40px; /* 指が届きやすいように余白を調整 */
+        border-top: 1px solid rgba(197, 168, 128, 0.3); /* 境界線を上に移動 */
+        padding: 20px 25px 40px; 
       }
       #main-container { 
         width: 100%; 
-        height: 50vh; /* 画面上半分でグラフを見る */
+        height: 50vh; /* 高さのバランスは50vhのまま */
       }
       .control-group {
-        margin-bottom: 28px; /* スマホ時は誤タップを防ぐためスライダー間隔をさらに広げる */
+        margin-bottom: 28px; 
       }
     }
   </style>
