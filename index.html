@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Amber Nexus - Interactive Controller</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
@@ -15,33 +16,39 @@
     #main-container { flex: 1; height: 100%; position: relative; background: #000; }
     #main { width: 100%; height: 100%; }
     
-    h3 { color: var(--accent); font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; margin: 20px 0 12px; }
-    .control-group { margin-bottom: 16px; }
-    label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 6px; }
-    .slider-hint { font-size: 9px; color: #666; margin-top: -4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
-    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 4px; }
+    h3 { color: var(--accent); font-size: 14px; border-left: 3px solid var(--accent); padding-left: 8px; margin: 25px 0 15px; }
+    .control-group { margin-bottom: 20px; } /* 余白を少し広げました */
+    label { display: flex; justify-content: space-between; font-size: 12px; color: #aaa; margin-bottom: 8px; }
+    .slider-hint { font-size: 10px; color: #666; margin-top: -6px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    
+    /* PC・スマホ共通：スライダーを少し太くして触りやすく */
+    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 6px; }
     .val-disp { color: var(--accent); font-weight: bold; }
     
-    select.barrel-select { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(197, 168, 128, 0.5); color: var(--accent); border-radius: 4px; font-size: 12px; outline: none; cursor: pointer; margin-bottom: 5px; }
+    select.barrel-select { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(197, 168, 128, 0.5); color: var(--accent); border-radius: 6px; font-size: 14px; outline: none; cursor: pointer; margin-bottom: 5px; }
     select.barrel-select option { background: #1a1a1a; color: #fff; }
-    .cask-label { font-size: 10px; color: #888; margin-bottom: 2px; }
-	  @media (max-width: 768px) {
+    .cask-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+
+    /* --- スマホ専用のUI調整 --- */
+    @media (max-width: 768px) {
       body { 
-        flex-direction: column-reverse; 
+        flex-direction: column; /* スマホでは グラフが上、パネルが下 */
       }
       #sidebar { 
         width: 100%; 
-        height: 50vh; 
+        height: 50vh; /* 画面下半分をスクロール領域に */
         border-right: none; 
         border-top: 1px solid rgba(197, 168, 128, 0.3); 
+        padding: 20px 25px 40px; /* 指が届きやすいように余白を調整 */
       }
       #main-container { 
         width: 100%; 
-        height: 50vh; 
+        height: 50vh; /* 画面上半分でグラフを見る */
+      }
+      .control-group {
+        margin-bottom: 28px; /* スマホ時は誤タップを防ぐためスライダー間隔をさらに広げる */
       }
     }
-	  
-	  
   </style>
 </head>
 <body>
