@@ -2,1101 +2,396 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Amber Matrix Pro</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <title>Amber Nexus - Interactive Controller</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <style>
-    :root{
-      --bg:#0b0c10; --panel:#121621; --panel2:#171c2a; --text:#e9ecf1;
-      --muted:rgba(233,236,241,.65); --line:rgba(233,236,241,.10);
-      --accent:#c5a880; --accent2:#7c6af7; --danger:#f76a8c;
+    :root { --bg: #0b0c10; --accent: #c5a880; --panel: rgba(20, 25, 30, 0.9); }
+    body { margin: 0; background: var(--bg); color: #fff; font-family: sans-serif; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    
+    #sidebar { width: 320px; background: var(--panel); border-right: 1px solid rgba(197, 168, 128, 0.3); padding: 20px; box-sizing: border-box; overflow-y: auto; backdrop-filter: blur(10px); z-index: 10; }
+    #sidebar::-webkit-scrollbar { width: 6px; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(197, 168, 128, 0.5); border-radius: 3px; }
+    
+    #main-container { flex: 1; height: 100%; position: relative; background: #000; }
+    #main { width: 100%; height: 100%; }
+    
+    h3 { color: var(--accent); font-size: 13px; border-left: 3px solid var(--accent); padding-left: 8px; margin: 20px 0 12px; }
+    .control-group { margin-bottom: 16px; }
+    label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 6px; }
+    .slider-hint { font-size: 9px; color: #666; margin-top: -4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; height: 4px; }
+    .val-disp { color: var(--accent); font-weight: bold; }
+    input[type=number]{
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(197, 168, 128, 0.5);
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+input[type=number]:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(197,168,128,0.15);
+}
+    select.barrel-select { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(197, 168, 128, 0.5); color: var(--accent); border-radius: 4px; font-size: 12px; outline: none; cursor: pointer; margin-bottom: 5px; }
+    select.barrel-select option { background: #1a1a1a; color: #fff; }
+    .cask-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+	  @media (max-width: 768px) {
+      body { 
+        flex-direction: column-reverse; 
+      }
+      #sidebar { 
+        width: 100%; 
+        height: 50vh; 
+        border-right: none; 
+        border-top: 1px solid rgba(197, 168, 128, 0.3); 
+      }
+      #main-container { 
+        width: 100%; 
+        height: 50vh; 
+      }
     }
-    *{ box-sizing:border-box; }
-    body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
-
-    /* ===== TABS ===== */
-    .tab-bar{
-      display:flex; gap:0; border-bottom:1px solid var(--line);
-      background:var(--panel); position:sticky; top:0; z-index:100;
-    }
-    .tab-btn{
-      flex:1; padding:14px 8px; background:none; border:none; color:var(--muted);
-      font-size:13px; cursor:pointer; border-bottom:2px solid transparent;
-      transition:all .2s; letter-spacing:.02em;
-    }
-    .tab-btn.active{ color:var(--accent); border-bottom-color:var(--accent); background:rgba(197,168,128,.06); }
-    .tab-btn:hover:not(.active){ color:var(--text); background:rgba(255,255,255,.04); }
-
-    .tab-page{ display:none; }
-    .tab-page.active{ display:block; }
-
-    /* ===== LAYOUT ===== */
-    .wrap{ max-width:1280px; margin:0 auto; padding:16px; }
-    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    @media (max-width:980px){ .row{ grid-template-columns:1fr; } }
-    .card{
-      background:linear-gradient(180deg,var(--panel),var(--panel2));
-      border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-    .grid{ display:grid; grid-template-columns:1fr; gap:12px; }
-    .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    @media(max-width:680px){ .two{ grid-template-columns:1fr; } }
-
-    .ctrl{
-      border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.18);
-      border-radius:14px; padding:12px;
-    }
-    .ctrl label{ display:flex; justify-content:space-between; gap:10px; font-size:12px; color:rgba(233,236,241,.90); font-weight:600; }
-    .ctrl .hint{ margin-top:6px; font-size:11px; color:var(--muted); line-height:1.4; }
-    input[type="range"]{ width:100%; margin-top:8px; accent-color:var(--accent); }
-    input[type="text"], input[type="number"], select{
-      width:100%; margin-top:6px; padding:8px 10px; border-radius:10px;
-      border:1px solid rgba(255,255,255,.1); background:rgba(0,0,0,.25);
-      color:var(--text); font-size:13px; outline:none;
-    }
-    input[type="text"]:focus, input[type="number"]:focus, select:focus{
-      border-color:rgba(197,168,128,.55); box-shadow:0 0 0 3px rgba(197,168,128,.12);
-    }
-    select option{ background:#1a1f2e; }
-    textarea{
-      width:100%; min-height:72px; resize:vertical; padding:10px 12px;
-      border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,.04);
-      color:var(--text); outline:none; font-size:13px; line-height:1.4; margin-top:6px;
-    }
-    textarea:focus{ border-color:rgba(197,168,128,.55); box-shadow:0 0 0 3px rgba(197,168,128,.12); }
-
-    .stage{
-      display:grid; place-items:center; padding:12px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.2);
-    }
-    .stage-inner{ width:min(460px,100%); aspect-ratio:1/1; position:relative; border-radius:18px; overflow:hidden; }
-    svg{ width:100%; height:100%; display:block; }
-
-    .section-title{ font-size:13px; border-bottom:1px solid var(--line); padding-bottom:6px; margin:14px 0 4px; color:var(--accent); font-weight:bold; }
-    .mono{ font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-weight:normal; color:var(--accent); }
-
-    .palette{ display:grid; grid-template-columns:repeat(7,32px); gap:6px; margin-top:10px; }
-    .swatch{
-      width:32px; height:32px; border-radius:50%; cursor:pointer;
-      border:2px solid rgba(255,255,255,.1); box-shadow:0 2px 5px rgba(0,0,0,.5);
-      transition:all .2s;
-    }
-    .swatch:hover{ transform:scale(1.1); }
-    .swatch.active{ border-color:#fff; transform:scale(1.15); box-shadow:0 0 10px rgba(255,255,255,.4); }
-
-    .btn{
-      padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06); color:var(--text); cursor:pointer;
-      font-size:13px; transition:all .2s; display:inline-flex; align-items:center; gap:6px;
-    }
-    .btn:hover{ background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); }
-    .btn-accent{ background:rgba(197,168,128,.15); border-color:rgba(197,168,128,.4); color:#e9ecf1; }
-    .btn-accent:hover{ background:rgba(197,168,128,.25); }
-    .btn-accent2{ background:rgba(124,106,247,.15); border-color:rgba(124,106,247,.4); color:#e9ecf1; }
-    .btn-accent2:hover{ background:rgba(124,106,247,.25); }
-    .btn-danger{ background:rgba(247,106,140,.12); border-color:rgba(247,106,140,.3); }
-    .btn-danger:hover{ background:rgba(247,106,140,.22); }
-    .btn-sm{ padding:6px 10px; font-size:11px; border-radius:8px; }
-    .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-
-    /* ===== HISTORY LIST ===== */
-    .history-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
-    .history-card{
-      background:var(--panel); border:1px solid rgba(255,255,255,.07); border-radius:14px;
-      padding:14px; cursor:pointer; transition:all .2s; position:relative;
-    }
-    .history-card:hover{ border-color:rgba(197,168,128,.4); background:var(--panel2); }
-    .history-card.selected{ border-color:var(--accent2); box-shadow:0 0 0 2px rgba(124,106,247,.25); }
-    .history-card .h-name{ font-size:14px; font-weight:700; margin-bottom:4px; }
-    .history-card .h-distillery{ font-size:11px; color:var(--muted); margin-bottom:8px; }
-    .history-card .h-meta{ font-size:11px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; }
-    .history-card .h-badge{
-      display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px;
-      background:rgba(197,168,128,.12); border:1px solid rgba(197,168,128,.2);
-    }
-    .history-card .h-del{
-      position:absolute; top:10px; right:10px; opacity:0; transition:opacity .2s;
-    }
-    .history-card:hover .h-del{ opacity:1; }
-    .h-swatch{ width:18px; height:18px; border-radius:50%; display:inline-block; vertical-align:middle; margin-right:4px; border:1px solid rgba(255,255,255,.2); }
-
-    /* ===== COMPARE ===== */
-    .compare-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media(max-width:700px){ .compare-wrap{ grid-template-columns:1fr; } }
-    .compare-slot{ position:relative; }
-    .compare-label{
-      text-align:center; font-size:12px; color:var(--muted); margin-bottom:8px;
-      letter-spacing:.08em; text-transform:uppercase;
-    }
-    .compare-select-btn{
-      width:100%; padding:12px; border-radius:12px; border:1px dashed rgba(255,255,255,.15);
-      background:rgba(0,0,0,.2); color:var(--muted); cursor:pointer; font-size:13px;
-      transition:all .2s; text-align:center;
-    }
-    .compare-select-btn:hover{ border-color:rgba(197,168,128,.4); color:var(--text); }
-
-    /* ===== QR / CAMERA ===== */
-    #qrArea{ margin-top:12px; text-align:center; }
-    #camera-view{ width:100%; max-width:320px; border-radius:12px; display:none; }
-    #scan-canvas{ display:none; }
-    .scan-status{ font-size:12px; color:var(--accent); margin-top:8px; min-height:20px; }
-
-    /* ===== LEGEND ===== */
-    .legend{ margin-top:10px; font-size:11px; color:var(--muted); line-height:1.5; padding:8px; background:rgba(0,0,0,.2); border-radius:8px; }
-
-    /* ===== DIFF BARS ===== */
-    .diff-row{ display:flex; align-items:center; gap:8px; font-size:12px; margin:4px 0; }
-    .diff-label{ width:90px; color:var(--muted); flex-shrink:0; text-align:right; }
-    .diff-bar-wrap{ flex:1; height:8px; background:rgba(255,255,255,.06); border-radius:4px; position:relative; overflow:hidden; }
-    .diff-bar-a{ position:absolute; top:0; left:0; height:100%; background:var(--accent); border-radius:4px; transition:width .3s; }
-    .diff-bar-b{ position:absolute; top:0; left:0; height:100%; background:var(--accent2); border-radius:4px; transition:width .3s; }
-    .diff-vals{ width:60px; font-family:ui-monospace,monospace; font-size:11px; color:var(--muted); flex-shrink:0; }
-
-    .tag-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
-    .tag{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
-
-    .empty-state{ text-align:center; padding:48px 24px; color:var(--muted); font-size:14px; }
-    .empty-state .icon{ font-size:36px; margin-bottom:12px; }
-
-    .notice{ padding:10px 14px; border-radius:10px; font-size:12px; background:rgba(197,168,128,.08); border:1px solid rgba(197,168,128,.2); margin-top:8px; }
+	  
+	  
   </style>
 </head>
 <body>
 
-<!-- TAB BAR -->
-<div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('editor')">🥃 テイスティング</button>
-  <button class="tab-btn" onclick="switchTab('history')">📚 履歴</button>
-  <button class="tab-btn" onclick="switchTab('compare')">⚖️ 比較</button>
+<div id="sidebar">
+  <div style="font-size: 22px; font-weight: bold; color: var(--accent); margin-bottom: 5px;">Amber Nexus</div>
+  <div style="font-size: 10px; color: #888; margin-bottom: 15px;">Tasting Topology System</div>
+
+<h3>📋 基本情報 (Identity)</h3>
+<div class="control-group">
+  <label style="display:block; margin-bottom:4px;">コア名 (Core Label)</label>
+  <input type="text" id="i-corename" maxlength="24" value="Amber Palette"
+    placeholder="例: Yamazaki 12"
+    style="width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(197,168,128,0.5);
+           color:#fff; border-radius:6px; padding:8px 10px; font-size:12px; outline:none;
+           box-sizing:border-box; font-family:sans-serif;"
+    oninput="syncParam()">
+  <div class="slider-hint"><span>グラフ中心に表示されます</span></div>
 </div>
 
-<!-- ============================================================ -->
-<!-- TAB 1: EDITOR -->
-<!-- ============================================================ -->
-<div id="tab-editor" class="tab-page active">
-<div class="wrap">
-  <div class="row">
-
-    <!-- LEFT: VISUAL -->
-    <div class="card">
-      <div class="stage">
-        <div class="stage-inner">
-          <svg id="svg" viewBox="0 0 1000 1000" aria-label="core">
-            <defs>
-              <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="blur"/>
-                <feComposite in="blur" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="inner"/>
-                <feColorMatrix id="shadowMatrix" in="inner" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.00 0" result="shadow"/>
-                <feComposite in="shadow" in2="SourceGraphic" operator="over"/>
-              </filter>
-              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="15" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <radialGradient id="coreGrad" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stop-color="rgba(255,255,255,0.4)"/>
-                <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
-                <stop offset="100%" stop-color="rgba(0,0,0,0.15)"/>
-              </radialGradient>
-            </defs>
-            <rect x="0" y="0" width="1000" height="1000" fill="transparent"/>
-            <g opacity="0.25">
-              <circle cx="500" cy="500" r="420" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-              <circle cx="500" cy="500" r="300" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-              <circle cx="500" cy="500" r="180" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-              <line x1="500" y1="80" x2="500" y2="920" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-              <line x1="80" y1="500" x2="920" y2="500" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-            </g>
-            <path id="objCore" d="" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <circle id="aura" cx="500" cy="500" r="260" fill="rgba(197,168,128,0.1)" filter="url(#softGlow)"/>
-            <path id="subjFrame" d="" fill="rgba(197,168,128,0.15)" stroke="rgba(197,168,128,0.9)" stroke-width="6" filter="url(#innerShadow)"/>
-            <path id="subjHighlight" d="" fill="url(#coreGrad)" opacity="0.6"/>
-            <g id="coreTextGroup" opacity="0.95">
-              <text id="coreText" x="500" y="500" text-anchor="middle" dominant-baseline="middle"
-                fill="rgba(233,236,241,0.92)" font-size="26" font-weight="700" letter-spacing="0.5"
-                style="paint-order:stroke;stroke:rgba(0,0,0,0.35);stroke-width:6px;">
-                <tspan x="500" dy="0">銘柄名</tspan>
-              </text>
-            </g>
-          </svg>
-        </div>
-      </div>
-      <div class="legend">
-        <strong>【客観コア（内側・点線）】</strong> Age＝角数 / ABV＝サイズ<br/>
-        <strong>【主観フレーム（外枠）】</strong> 5軸テイスティングのレーダー<br/>
-        Sharp↔Round / Focused↔Complex / Dry↔Sweet / Light↔Rich / Lively↔Weighty
-      </div>
-    </div>
-
-    <!-- RIGHT: CONTROLS -->
-    <div class="card">
-      <div class="grid">
-
-        <!-- META -->
-        <div class="section-title">🏷️ 銘柄情報</div>
-        <div class="two">
-          <div class="ctrl">
-            <label>銘柄名</label>
-            <input type="text" id="metaName" placeholder="例: Glenfarclas 15y">
-          </div>
-          <div class="ctrl">
-            <label>蒸留所</label>
-            <input type="text" id="metaDistillery" placeholder="例: Glenfarclas">
-          </div>
-        </div>
-        <div class="two">
-          <div class="ctrl">
-            <label>地域</label>
-            <input type="text" id="metaRegion" placeholder="例: Speyside">
-          </div>
-          <div class="ctrl">
-            <label>テイスティング日</label>
-            <input type="text" id="metaDate" placeholder="例: 2024-02-25">
-          </div>
-        </div>
-
-        <!-- CORE NOTE -->
-        <div class="section-title">💬 中心コア（自由入力）</div>
-        <div class="ctrl">
-          <label>Core Note</label>
-          <textarea id="coreNote" placeholder="このボトルの核 / 一言タグ / 自分のメモ"></textarea>
-          <div class="hint">円の中心に表示されます</div>
-        </div>
-
-        <!-- COLOR -->
-        <div class="ctrl">
-          <label>① 液色<span id="vHueName" class="mono">Amber</span></label>
-          <div id="colorPalette" class="palette"></div>
-          <input type="hidden" id="huePreset" value="30">
-        </div>
-
-        <!-- SPECS -->
-        <div class="section-title">📐 Specs（客観・コアの形状）</div>
-        <div class="two">
-          <div class="ctrl">
-            <label>② Age<span id="vAge" class="mono"></span></label>
-            <input id="age" type="range" min="0" max="35" step="1" value="12">
-            <div class="hint">角数：若(3) → 30年(円)</div>
-          </div>
-          <div class="ctrl">
-            <label>③ ABV<span id="vAbv" class="mono"></span></label>
-            <input id="abv" type="range" min="35" max="65" step="0.5" value="46">
-            <div class="hint">コアのサイズ</div>
-          </div>
-        </div>
-
-        <!-- TASTING -->
-        <div class="section-title">👅 Tasting 5 Axes（主観・外枠）</div>
-        <div class="two">
-          <div class="ctrl">
-            <label>④ Sharp↔Round<span id="vRound" class="mono"></span></label>
-            <input id="round" type="range" min="1" max="5" step="1" value="3">
-          </div>
-          <div class="ctrl">
-            <label>⑤ Focused↔Complex<span id="vComplex" class="mono"></span></label>
-            <input id="complex" type="range" min="1" max="5" step="1" value="3">
-          </div>
-        </div>
-        <div class="two">
-          <div class="ctrl">
-            <label>Light↔Rich<span id="vRich" class="mono"></span></label>
-            <input id="rich" type="range" min="1" max="5" step="1" value="3">
-          </div>
-          <div class="ctrl">
-            <label>Dry↔Sweet<span id="vSweet" class="mono"></span></label>
-            <input id="sweet" type="range" min="1" max="5" step="1" value="3">
-          </div>
-        </div>
-        <div class="ctrl">
-          <label>Lively↔Weighty<span id="vMove" class="mono"></span></label>
-          <input id="move" type="range" min="1" max="5" step="1" value="3">
-        </div>
-
-        <!-- SAVE / SHARE -->
-        <div class="section-title">💾 保存 / 共有</div>
-        <div class="ctrl">
-          <div class="btn-row">
-            <button class="btn btn-accent" onclick="saveToHistory()">📚 履歴に保存</button>
-            <button class="btn btn-accent" onclick="generateQR()">📱 QR生成</button>
-            <button class="btn" onclick="copyURL()">🔗 URLコピー</button>
-          </div>
-          <div id="qrArea" style="display:none;margin-top:12px;text-align:center;">
-            <div id="qrCanvas"></div>
-            <div style="font-size:11px;color:var(--muted);margin-top:6px;">QRを読み込むと状態が復元されます</div>
-            <button class="btn btn-sm" style="margin-top:8px;" onclick="downloadQRImage()">⬇ 画像保存</button>
-          </div>
-          <div id="copyMsg" style="display:none;margin-top:6px;font-size:12px;color:var(--accent);text-align:center;">✅ コピーしました</div>
-        </div>
-
-        <!-- QR SCAN -->
-        <div class="section-title">📷 QRスキャン（カメラ読み取り）</div>
-        <div class="ctrl">
-          <div class="btn-row">
-            <button class="btn btn-accent2" onclick="startScan()">📷 カメラを起動</button>
-            <button class="btn" onclick="stopScan()">停止</button>
-          </div>
-          <div style="margin-top:10px;text-align:center;">
-            <video id="camera-view" autoplay playsinline></video>
-            <canvas id="scan-canvas"></canvas>
-          </div>
-          <div class="scan-status" id="scan-status"></div>
-          <div class="hint">スマホのQRコードをかざすと自動で読み取ります</div>
-        </div>
-
-      </div>
-    </div>
-
-  </div><!-- /row -->
-</div><!-- /wrap -->
-</div><!-- /tab-editor -->
-
-
-<!-- ============================================================ -->
-<!-- TAB 2: HISTORY -->
-<!-- ============================================================ -->
-<div id="tab-history" class="tab-page">
-<div class="wrap">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
-    <h2 style="margin:0;font-size:16px;">テイスティング履歴</h2>
-    <div class="btn-row" style="margin:0;">
-      <button class="btn btn-sm" onclick="exportJSON()">⬇ JSON書き出し</button>
-      <label class="btn btn-sm" style="cursor:pointer;">⬆ JSON読み込み<input type="file" accept=".json" onchange="importJSON(event)" style="display:none;"></label>
-      <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑 全削除</button>
-    </div>
-  </div>
-  <div id="history-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
-  <div id="history-list"></div>
-</div>
+<div class="control-group">
+  <label>
+    Age (熟成年数)
+    <span class="val-disp"><span id="v-age">12</span> Years</span>
+  </label>
+  <div class="slider-hint"><span>Young (暴れる)</span><span>Aged (統合)</span></div>
+  <input type="number" id="i-age" min="0" max="100" step="1" value="12" oninput="syncParam()">
 </div>
 
+<div class="control-group">
+  <label>
+    ABV (アルコール度数)
+    <span class="val-disp"><span id="v-abv">43.0</span> %</span>
+  </label>
+  <div class="slider-hint"><span>40.0% (穏やか)</span><span>98.0% (爆発的)</span></div>
+  <input type="number" id="i-abv" min="40" max="98" step="0.1" value="43.0" oninput="syncParam()">
+</div>
 
-<!-- ============================================================ -->
-<!-- TAB 3: COMPARE -->
-<!-- ============================================================ -->
-<div id="tab-compare" class="tab-page">
-<div class="wrap">
-  <div class="compare-wrap">
+<div class="control-group">
+  <div class="cask-label">ウィスキー分類 (Type)</div>
+  <select id="s-whisky-type" class="barrel-select" onchange="syncParam()">
+    <option value="scotch">Scotch（スコッチ）</option>
+    <option value="irish">Irish（アイリッシュ）</option>
+    <option value="american">American（アメリカン）</option>
+    <option value="canadian">Canadian（カナディアン）</option>
+    <option value="japanese" selected>Japanese（ジャパニーズ）</option>
+    <option value="other">Other（その他）</option>
+  </select>
+</div>
 
-    <div class="compare-slot">
-      <div class="compare-label" style="color:var(--accent);">▶ A</div>
-      <button class="compare-select-btn" id="cmp-btn-a" onclick="openCompareSelect('a')">履歴から選択…</button>
-      <div id="cmp-panel-a" style="display:none;margin-top:10px;">
-        <div class="card" style="padding:12px;">
-          <div id="cmp-info-a" style="margin-bottom:10px;"></div>
-          <div class="stage"><div class="stage-inner" id="cmp-stage-a"></div></div>
-        </div>
-      </div>
-    </div>
+  <h3>樽の環境 (Cask Atlas)</h3>
+  <div class="control-group">
+    <div class="cask-label">Base Cask (基本樽)</div>
+    <select id="s-barrel" class="barrel-select" onchange="syncParam()">
+      <option value="reset">● Standard (基本)</option>
+      <option value="bourbon" selected>● Bourbon (バニラ・蜂蜜)</option>
+      <option value="american_oak">● American Oak (バニラ・レモン)</option>
+      <option value="european_oak">■ European Oak (重厚・タンニン)</option>
+      <option value="mizunara">▲ Mizunara (香木・スパイス)</option>
+      <option value="px_sherry">◆ PX Sherry (極甘口・レーズン)</option>
+    </select>
 
-    <div class="compare-slot">
-      <div class="compare-label" style="color:var(--accent2);">▶ B</div>
-      <button class="compare-select-btn" id="cmp-btn-b" onclick="openCompareSelect('b')">履歴から選択…</button>
-      <div id="cmp-panel-b" style="display:none;margin-top:10px;">
-        <div class="card" style="padding:12px;">
-          <div id="cmp-info-b" style="margin-bottom:10px;"></div>
-          <div class="stage"><div class="stage-inner" id="cmp-stage-b"></div></div>
-        </div>
-      </div>
-    </div>
-
+    <div class="cask-label" style="margin-top: 10px;">Finish Cask (後熟)</div>
+    <select id="s-finish" class="barrel-select" onchange="syncParam()">
+      <option value="none">なし (None)</option>
+      <option value="sauternes">◆ Sauternes (貴腐ワイン・華やか)</option>
+      <option value="px_sherry">◆ PX Sherry (極甘口・レーズン)</option>
+      <option value="port">◆ Port Wine (赤ベリー・プラム)</option>
+      <option value="mizunara">▲ Mizunara (香木・スパイス)</option>
+      <option value="beer">■ Beer/IPA/Stout (ホップ・珈琲)</option>
+      <option value="rum">● Rum (黒糖・トロピカル)</option>
+    </select>
   </div>
 
-  <!-- DIFF -->
-  <div id="cmp-diff" style="display:none;margin-top:20px;">
-    <div class="card">
-      <div class="section-title">⚖️ 差分分析</div>
-      <div id="diff-bars"></div>
-    </div>
+  <div class="control-group">
+    <label>Cask Size (樽の大きさ) <span class="val-disp" id="v-size">3</span></label>
+    <div class="slider-hint"><span>Octave (密集)</span><span>Butt (拡散)</span></div>
+    <input type="range" id="i-size" min="1" max="5" value="3" oninput="syncParam()">
   </div>
 
-</div>
-</div>
+  <h3>テクスチャー (Mouthfeel)</h3>
+  <div class="control-group">
+    <label>Body (粘度・重さ) <span class="val-disp" id="v-body">5</span></label>
+    <input type="range" id="i-body" min="1" max="10" value="5" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Crisp (キレ・鮮度) <span class="val-disp" id="v-crisp">5</span></label>
+    <input type="range" id="i-crisp" min="1" max="10" value="5" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Heat (熱量・アタック) <span class="val-disp" id="v-heat">5</span></label>
+    <input type="range" id="i-heat" min="1" max="10" value="5" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Grip (収斂味・樽渋) <span class="val-disp" id="v-grip">5</span></label>
+    <input type="range" id="i-grip" min="1" max="10" value="5" oninput="syncParam()">
+  </div>
 
+  <h3>味わいの座標 (Flavor Matrix)</h3>
+  <div class="control-group">
+    <label>Sweet (甘口度) <span class="val-disp" id="v-sweet">5</span></label>
+    <input type="range" id="i-sweet" min="0" max="10" value="5" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Woody (樽香度) <span class="val-disp" id="v-woody">5</span></label>
+    <input type="range" id="i-woody" min="0" max="10" value="5" oninput="syncParam()">
+  </div>
 
-<!-- MODAL: compare select -->
-<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;">
-  <div style="background:var(--panel);border-radius:18px;padding:20px;max-width:480px;width:90%;max-height:70vh;overflow-y:auto;border:1px solid rgba(255,255,255,.1);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-size:15px;font-weight:700;">履歴から選択</div>
-      <button class="btn btn-sm" onclick="closeModal()">✕</button>
-    </div>
-    <div id="modal-list"></div>
+  <h3>強度 (Intensity)</h3>
+  <div class="control-group">
+    <label>Aroma (香りの広がり) <span class="val-disp" id="v-aroma">3</span></label>
+    <input type="range" id="i-aroma" min="1" max="5" value="3" oninput="syncParam()">
+  </div>
+  <div class="control-group">
+    <label>Finish (余韻の揺れ) <span class="val-disp" id="v-finish">2</span></label>
+    <input type="range" id="i-finish" min="1" max="5" value="2" oninput="syncParam()">
   </div>
 </div>
 
+<div id="main-container">
+  <div id="main"></div>
+</div>
 
 <script>
-/* =====================================================
-   UTILS
-===================================================== */
-function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
-function lerp(a,b,t){ return a+(b-a)*t; }
-function hsl(h,s,l,a=1){ return `hsla(${h},${s}%,${l}%,${a})`; }
-function $(id){ return document.getElementById(id); }
-
-/* =====================================================
-   WHISKY COLORS
-===================================================== */
-const whiskyColors = [
-  {name:'Gin Clear',hue:60,displayColor:'#fffef5'},{name:'Very Pale',hue:58,displayColor:'#fffedc'},
-  {name:'Pale Yellow',hue:52,displayColor:'#feee98'},{name:'White Wine',hue:50,displayColor:'#fbea78'},
-  {name:'Pale Straw',hue:48,displayColor:'#fbe166'},{name:'Straw Gold',hue:46,displayColor:'#f7dc55'},
-  {name:'Pale Gold',hue:44,displayColor:'#f8d848'},{name:'Light Gold',hue:42,displayColor:'#E2C355'},
-  {name:'Golden',hue:40,displayColor:'#DDB53B'},{name:'Old Gold',hue:38,displayColor:'#D6A42E'},
-  {name:'Deep Gold',hue:36,displayColor:'#D19522'},{name:'Gold Amber',hue:34,displayColor:'#C8841A'},
-  {name:'Sherry',hue:32,displayColor:'#BF7412'},{name:'Amber',hue:30,displayColor:'#B5640A'},
-  {name:'Dark Amber',hue:27,displayColor:'#A35408'},{name:'Copper Tone',hue:24,displayColor:'#91430F'},
-  {name:'Mahogany',hue:20,displayColor:'#7D320E'},{name:'Reddish Brown',hue:17,displayColor:'#6B2610'},
-  {name:'Chestnut',hue:14,displayColor:'#591B0D'},{name:'Brown Sherry',hue:11,displayColor:'#46130C'},
-  {name:'Deep Mahogany',hue:8,displayColor:'#2D0A05'},
-];
-
-/* =====================================================
-   PALETTE BUILD
-===================================================== */
-const paletteContainer = $('colorPalette');
-const hueInput = $('huePreset');
-const vHueName = $('vHueName');
-whiskyColors.forEach(color => {
-  const sw = document.createElement('div');
-  sw.className = 'swatch';
-  if(color.hue == hueInput.value) sw.classList.add('active');
-  sw.style.background = color.displayColor;
-  sw.title = color.name;
-  sw.addEventListener('click', () => {
-    document.querySelectorAll('.swatch').forEach(el => el.classList.remove('active'));
-    sw.classList.add('active');
-    hueInput.value = color.hue;
-    vHueName.textContent = color.name;
-  });
-  paletteContainer.appendChild(sw);
-});
-
-/* =====================================================
-   CORE TEXT
-===================================================== */
-const coreNoteEl = $('coreNote');
-function renderCoreText(text, svgId='svg'){
-  const el = document.querySelector(`#${svgId} #coreText`) || $('coreText');
-  if(!el) return;
-  const t = (text||'').trim();
-  const name = $('metaName')?.value?.trim() || '';
-  const lines = (t.length ? t : (name||'銘柄名')).split(/\r?\n/).slice(0,4);
-  while(el.firstChild) el.removeChild(el.firstChild);
-  const lineHeight = 32;
-  const total = (lines.length-1)*lineHeight;
-  lines.forEach((ln,i) => {
-    const sp = document.createElementNS('http://www.w3.org/2000/svg','tspan');
-    sp.setAttribute('x','500');
-    sp.setAttribute('dy', i===0 ? String(-total/2) : String(lineHeight));
-    sp.textContent = ln;
-    el.appendChild(sp);
-  });
-}
-
-if(coreNoteEl) coreNoteEl.addEventListener('input', e => renderCoreText(e.target.value));
-$('metaName')?.addEventListener('input', () => renderCoreText(coreNoteEl?.value||''));
-
-/* =====================================================
-   POLYGON MATH
-===================================================== */
-function verticesFromAge(age){
-  if(age<=7) return 3; if(age<=12) return 5; if(age<=20) return 8;
-  if(age<=29) return 12; return 24;
-}
-function polygonPoints(cx,cy,r,n,rotDeg){
-  const pts=[]; const rot=rotDeg*Math.PI/180;
-  for(let i=0;i<n;i++){
-    const a=rot+i*(2*Math.PI/n);
-    pts.push({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});
-  }
-  return pts;
-}
-function unitVec(ax,ay,bx,by){
-  const dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy)||1;
-  return {x:dx/len,y:dy/len,len};
-}
-function roundedPolygonPath(points,roundPx){
-  const n=points.length;
-  if(n<3) return '';
-  if(roundPx<=0.5){
-    let d=`M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
-    for(let i=1;i<n;i++) d+=` L ${points[i].x.toFixed(2)} ${points[i].y.toFixed(2)}`;
-    return d+' Z';
-  }
-  let d='';
-  for(let i=0;i<n;i++){
-    const p0=points[(i-1+n)%n],p1=points[i],p2=points[(i+1)%n];
-    const v1=unitVec(p1.x,p1.y,p0.x,p0.y),v2=unitVec(p1.x,p1.y,p2.x,p2.y);
-    const mr=Math.min(roundPx,v1.len*0.48,v2.len*0.48);
-    const pA={x:p1.x+v1.x*mr,y:p1.y+v1.y*mr};
-    const pB={x:p1.x+v2.x*mr,y:p1.y+v2.y*mr};
-    if(i===0) d+=`M ${pA.x.toFixed(2)} ${pA.y.toFixed(2)}`;
-    else d+=` L ${pA.x.toFixed(2)} ${pA.y.toFixed(2)}`;
-    d+=` Q ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} ${pB.x.toFixed(2)} ${pB.y.toFixed(2)}`;
-  }
-  return d+' Z';
-}
-
-/* =====================================================
-   COMPUTE STATE
-===================================================== */
-function computeState(inputs){
-  const hue=Number(inputs.hue),abv=Number(inputs.abv),age=Number(inputs.age);
-  const round=Number(inputs.round),complex=Number(inputs.complex);
-  const sweet=Number(inputs.sweet),rich=Number(inputs.rich),move=Number(inputs.move);
-  const vertices=verticesFromAge(age);
-  const tAbv=clamp((abv-35)/30,0,1);
-  const rBase=lerp(130,260,Math.pow(tAbv,0.6));
-  const tRound=(round-1)/4;
-  const roundPx=lerp(0,(rBase+35)*0.5,tRound);
-  const tComplex=(complex-1)/4;
-  const strokeW=lerp(8,2,tComplex),shadowAlpha=lerp(0,0.95,tComplex);
-  const tSweet=(sweet-1)/4,sat=lerp(15,75,tSweet);
-  const tRich=(rich-1)/4,yShift=lerp(-100,100,tRich);
-  const tMove=(move-1)/4,amp=lerp(14,0,tMove),freq=lerp(1.5,0.1,tMove);
-  return {hue,abv,age,round,complex,sweet,rich,move,vertices,rBase,roundPx,strokeW,shadowAlpha,yShift,sat,fillA:0.18,auraA:0.12,strokeA:0.9,lightness:45,amp,freq};
-}
-
-/* =====================================================
-   DRAW (main editor)
-===================================================== */
-const svgEl = $('svg');
-const objCoreEl = $('objCore');
-const subjFrameEl = $('subjFrame');
-const subjHiEl = $('subjHighlight');
-const auraEl = $('aura');
-const shadowMatrixEl = $('shadowMatrix');
-let radarLabelsAdded = false;
-
-const editorInputs = {
-  huePreset:$('huePreset'),abv:$('abv'),age:$('age'),
-  round:$('round'),complex:$('complex'),sweet:$('sweet'),rich:$('rich'),move:$('move')
-};
-const editorLabels = {
-  vAbv:$('vAbv'),vAge:$('vAge'),vRound:$('vRound'),vComplex:$('vComplex'),
-  vSweet:$('vSweet'),vRich:$('vRich'),vMove:$('vMove')
+  let myChart;
+let params = {
+  coreName: 'Amber Palette',
+  whiskyType: 'japanese', // ←追加
+  barrel: 'bourbon', finish: 'none', caskSize: 3,
+  spec: { age: 12, abv: 43 },
+  texture: { body: 5, crisp: 5, heat: 5, grip: 5 },
+  matrix: { sweet: 5, woody: 5 },
+  intensity: { aroma: 3, finish: 2 }
 };
 
-function getEditorInputs(){
-  return { hue:editorInputs.huePreset.value,abv:editorInputs.abv.value,age:editorInputs.age.value,
-    round:editorInputs.round.value,complex:editorInputs.complex.value,sweet:editorInputs.sweet.value,
-    rich:editorInputs.rich.value,move:editorInputs.move.value };
-}
-
-function drawToSVG(svgEl, s, now, addLabels=false){
-  const objPts = polygonPoints(500,500,s.rBase,s.vertices,-90);
-  const objD = roundedPolygonPath(objPts,0);
-  svgEl.querySelector('#objCore')?.setAttribute('d',objD);
-
-  const wobX = Math.sin((now/1000)*(2*Math.PI*s.freq))*s.amp*0.6;
-  const wobY = Math.cos((now/1000)*(2*Math.PI*s.freq*0.8))*s.amp*0.4;
-  const baseR = s.rBase+60, maxExtra=90;
-  const axes5=[s.round,s.complex,s.sweet,s.rich,s.move];
-  const radarPts = axes5.map((val,i)=>{
-    const a=(-90+i*(360/5))*Math.PI/180;
-    const t=(val-1)/4, r=baseR+maxExtra*t;
-    return {x:500+r*Math.cos(a)+wobX*Math.cos(a),y:500+r*Math.sin(a)+wobY*Math.sin(a)};
-  });
-  let subjD='';
-  for(let i=0;i<5;i++){
-    const p0=radarPts[(i-1+5)%5],p1=radarPts[i],p2=radarPts[(i+1)%5];
-    const cpX=p1.x+(p2.x-p0.x)*0.2, cpY=p1.y+(p2.y-p0.y)*0.2;
-    if(i===0) subjD+=`M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
-    subjD+=` Q ${cpX.toFixed(2)} ${cpY.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-  subjD+=' Z';
-
-  const fill=hsl(s.hue,s.sat,s.lightness,s.fillA);
-  const stroke=hsl(s.hue,clamp(s.sat+15,0,100),clamp(s.lightness+10,0,100),s.strokeA);
-
-  const sf=svgEl.querySelector('#subjFrame');
-  const shi=svgEl.querySelector('#subjHighlight');
-  const au=svgEl.querySelector('#aura');
-  const sm=svgEl.querySelector('#shadowMatrix');
-
-  if(sf){ sf.setAttribute('d',subjD); sf.setAttribute('fill',fill); sf.setAttribute('stroke',stroke); sf.setAttribute('stroke-width',s.strokeW.toFixed(1)); }
-  if(shi) shi.setAttribute('d',subjD);
-  if(sm) sm.setAttribute('values',`0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${s.shadowAlpha.toFixed(2)} 0`);
-  const auraR = 270+(s.move<5?(Math.sin(Date.now()/1000*s.freq*2)*s.amp*0.8):0);
-  if(au){ au.setAttribute('cx',500+wobX); au.setAttribute('cy',500+wobY); au.setAttribute('r',auraR.toFixed(1)); au.setAttribute('fill',hsl(s.hue,clamp(s.sat+5,0,100),clamp(s.lightness+12,0,100),s.auraA)); }
-
-  if(addLabels && !svgEl._labelsAdded){
-    svgEl._labelsAdded=true;
-    const names=['Sharp↔Round','Focused↔Complex','Dry↔Sweet','Light↔Rich','Lively↔Weighty'];
-    names.forEach((name,i)=>{
-      const a=(-90+i*72)*Math.PI/180;
-      const lr=baseR+maxExtra+50;
-      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
-      t.setAttribute('x',(500+lr*Math.cos(a)).toFixed(1));
-      t.setAttribute('y',(500+lr*Math.sin(a)).toFixed(1));
-      t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle');
-      t.setAttribute('fill','rgba(233,236,241,0.4)'); t.setAttribute('font-size','22');
-      t.textContent=name;
-      svgEl.appendChild(t);
-    });
-  }
-}
-
-function animLoop(){
-  const s = computeState(getEditorInputs());
-  editorLabels.vAge.textContent=`${s.age}y (角:${s.vertices})`;
-  editorLabels.vAbv.textContent=`${s.abv.toFixed(1)}%`;
-  editorLabels.vRound.textContent=s.round;
-  editorLabels.vComplex.textContent=s.complex;
-  editorLabels.vSweet.textContent=s.sweet;
-  editorLabels.vRich.textContent=s.rich;
-  editorLabels.vMove.textContent=s.move;
-  drawToSVG(svgEl,s,performance.now(),true);
-  renderCoreText(coreNoteEl?.value||'');
-  requestAnimationFrame(animLoop);
-}
-requestAnimationFrame(animLoop);
-
-/* =====================================================
-   QR GENERATE
-===================================================== */
-function buildStateObject(){
-  return {
-    name:$('metaName')?.value||'',
-    distillery:$('metaDistillery')?.value||'',
-    region:$('metaRegion')?.value||'',
-    date:$('metaDate')?.value||'',
-    note:$('coreNote')?.value||'',
-    age:editorInputs.age.value,
-    abv:editorInputs.abv.value,
-    round:editorInputs.round.value,
-    complex:editorInputs.complex.value,
-    sweet:editorInputs.sweet.value,
-    rich:editorInputs.rich.value,
-    move:editorInputs.move.value,
-    hue:editorInputs.huePreset.value
+  const atlasData = {
+    bourbon:      { notes: ["Vanilla", "Coconut", "Toffee", "Honey", "Oak"], color: "#f4d03f" },
+    american_oak: { notes: ["Vanilla", "Coconut", "Toffee", "Honey", "Oak", "Lemon"], color: "#f4d03f" },
+    european_oak: { notes: ["Raisin", "Chocolate", "Nutmeg", "Tannin", "Oak", "Spice"], color: "#5c3a21" },
+    mizunara:     { notes: ["Sandalwood", "Incense", "Spice", "Vanilla", "Coconut"], color: "#c5a880" },
+    px_sherry:    { notes: ["Raisin", "Chocolate", "Fig", "Syrup", "Plum"], color: "#8c3b3b" },
+    sauternes:    { notes: ["Apricot", "Honey", "Floral", "Lemon", "Syrup"], color: "#f1c40f" },
+    port:         { notes: ["Plum", "Red Berry", "Chocolate", "Spice", "Tannin"], color: "#782844" },
+    beer:         { notes: ["Hops", "Malt", "Coffee", "Chocolate", "Lemon"], color: "#d35400" },
+    rum:          { notes: ["Brown Sugar", "Banana", "Pineapple", "Molasses", "Vanilla"], color: "#d68910" },
+    none:         { notes: [], color: "#555" },
+    reset:        { notes: [], color: "#555" }
   };
-}
-
-function stateToURLParams(st){
-  const p = new URLSearchParams({
-    age:st.age,abv:st.abv,round:st.round,complex:st.complex,
-    sweet:st.sweet,rich:st.rich,move:st.move,hue:st.hue,
-    note:encodeURIComponent(st.note||''),
-    name:encodeURIComponent(st.name||''),
-    distillery:encodeURIComponent(st.distillery||''),
-    region:encodeURIComponent(st.region||''),
-    date:encodeURIComponent(st.date||'')
-  });
-  return location.href.split('?')[0]+'?'+p.toString();
-}
-
-function generateQR(){
-  const url = stateToURLParams(buildStateObject());
-  const area = $('qrArea'), canvas = $('qrCanvas');
-  canvas.innerHTML='';
-  area.style.display='block';
-  new QRCode(canvas,{text:url,width:200,height:200,colorDark:'#1a1510',colorLight:'#f5e9d0',correctLevel:QRCode.CorrectLevel.M});
-}
-
-function copyURL(){
-  const url = stateToURLParams(buildStateObject());
-  navigator.clipboard.writeText(url).then(()=>{
-    const msg=$('copyMsg'); msg.style.display='block';
-    setTimeout(()=>msg.style.display='none',2500);
-  });
-}
-
-function downloadQRImage(){
-  const img = $('qrCanvas')?.querySelector('img');
-  if(!img){alert('先にQRを生成してください');return;}
-  const a=document.createElement('a');
-  a.href=img.src;
-  a.download=($('metaName')?.value||'amber')+'_qr.png';
-  a.click();
-}
-
-/* =====================================================
-   RESTORE FROM URL
-===================================================== */
-function restoreState(params){
-  ['age','abv','round','complex','sweet','rich','move'].forEach(k=>{
-    if(params.has(k) && editorInputs[k]) editorInputs[k].value=params.get(k);
-  });
-  if(params.has('hue')){
-    const hue=params.get('hue');
-    editorInputs.huePreset.value=hue;
-    document.querySelectorAll('.swatch').forEach((el,i)=>{
-      if(whiskyColors[i] && String(whiskyColors[i].hue)===String(hue)){
-        document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
-        el.classList.add('active');
-        if(vHueName) vHueName.textContent=whiskyColors[i].name;
-      }
-    });
-  }
-  if(params.has('note') && coreNoteEl){ coreNoteEl.value=decodeURIComponent(params.get('note')||''); renderCoreText(coreNoteEl.value); }
-  if(params.has('name') && $('metaName')) $('metaName').value=decodeURIComponent(params.get('name')||'');
-  if(params.has('distillery') && $('metaDistillery')) $('metaDistillery').value=decodeURIComponent(params.get('distillery')||'');
-  if(params.has('region') && $('metaRegion')) $('metaRegion').value=decodeURIComponent(params.get('region')||'');
-  if(params.has('date') && $('metaDate')) $('metaDate').value=decodeURIComponent(params.get('date')||'');
-}
-
-const urlParams = new URLSearchParams(location.search);
-if(urlParams.has('age')) restoreState(urlParams);
-
-/* =====================================================
-   QR CAMERA SCAN
-===================================================== */
-let scanStream=null, scanTimer=null;
-
-function startScan(){
-  $('scan-status').textContent='カメラを起動中…';
-  const video=$('camera-view'), canvas=$('scan-canvas');
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(stream=>{
-      scanStream=stream;
-      video.srcObject=stream;
-      video.style.display='block';
-      video.play();
-      $('scan-status').textContent='QRコードをかざしてください';
-      scanTimer=setInterval(()=>scanFrame(video,canvas),400);
-    })
-    .catch(e=>{
-      $('scan-status').textContent='カメラにアクセスできませんでした: '+e.message;
-    });
-}
-
-function stopScan(){
-  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
-  clearInterval(scanTimer);
-  $('camera-view').style.display='none';
-  $('scan-status').textContent='';
-}
-
-function scanFrame(video, canvas){
-  if(video.readyState !== video.HAVE_ENOUGH_DATA) return;
-  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
-  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
-  const imageData=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
-  if(typeof jsQR === 'undefined') return;
-  const code=jsQR(imageData.data,imageData.width,imageData.height);
-  if(code && code.data){
-    try{
-      let urlStr=code.data;
-      const qp=new URLSearchParams(urlStr.includes('?')?urlStr.split('?')[1]:urlStr);
-      if(qp.has('age')){
-        restoreState(qp);
-        $('scan-status').textContent='✅ 読み取り成功！グラフを復元しました';
-        stopScan();
-      }
-    }catch(e){}
-  }
-}
-
-// Lazy load jsQR for scanning
-function loadJsQR(){
-  return new Promise((res,rej)=>{
-    if(typeof jsQR!=='undefined'){res();return;}
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-    s.onload=res; s.onerror=rej;
-    document.head.appendChild(s);
-  });
-}
-const origStartScan = startScan;
-window.startScan = function(){
-  loadJsQR().then(origStartScan).catch(()=>{ $('scan-status').textContent='jsQRの読み込みに失敗しました'; });
+  const whiskyTypeBg = {
+  scotch:   '#0f172a', // deep navy
+  irish:    '#0b2e1a', // deep green
+  american: '#2b1a0f', // dark amber brown
+  canadian: '#2a1020', // wine/bordeaux
+  japanese: '#111111', // sumi black
+  other:    '#1f2937'  // dark gray-blue
 };
-
-/* =====================================================
-   HISTORY
-===================================================== */
-const HISTORY_KEY='amber_matrix_history_v2';
-
-function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); }catch(e){ return []; } }
-function saveHistory(list){ localStorage.setItem(HISTORY_KEY,JSON.stringify(list)); }
-
-function saveToHistory(){
-  const name=$('metaName')?.value?.trim();
-  if(!name){ alert('銘柄名を入力してください'); return; }
-  const list=loadHistory();
-  const entry={
-    id:Date.now(),
-    ...buildStateObject(),
-    savedAt:new Date().toISOString()
-  };
-  list.unshift(entry);
-  saveHistory(list);
-  renderHistory();
-  alert(`「${name}」を履歴に保存しました`);
-}
-
-function deleteEntry(id){
-  if(!confirm('削除しますか？')) return;
-  const list=loadHistory().filter(e=>e.id!==id);
-  saveHistory(list);
-  renderHistory();
-}
-
-function clearHistory(){
-  if(!confirm('履歴を全て削除しますか？')) return;
-  saveHistory([]);
-  renderHistory();
-}
-
-function loadEntry(entry){
-  $('metaName').value=entry.name||'';
-  $('metaDistillery').value=entry.distillery||'';
-  $('metaRegion').value=entry.region||'';
-  $('metaDate').value=entry.date||'';
-  $('coreNote').value=entry.note||'';
-  ['age','abv','round','complex','sweet','rich','move'].forEach(k=>{
-    if(editorInputs[k]&&entry[k]!==undefined) editorInputs[k].value=entry[k];
-  });
-  if(entry.hue){
-    editorInputs.huePreset.value=entry.hue;
-    document.querySelectorAll('.swatch').forEach((el,i)=>{
-      if(whiskyColors[i]&&String(whiskyColors[i].hue)===String(entry.hue)){
-        document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
-        el.classList.add('active');
-        vHueName.textContent=whiskyColors[i].name;
-      }
-    });
-  }
-  renderCoreText(entry.note||'');
-  switchTab('editor');
-}
-
-function getColorSwatch(hue){
-  const c=whiskyColors.find(w=>String(w.hue)===String(hue));
-  return c?`<span class="h-swatch" style="background:${c.displayColor}" title="${c.name}"></span>`:'';
-}
-
-function renderHistory(){
-  const list=loadHistory();
-  const container=$('history-list');
-  $('history-count').textContent=`${list.length}件のテイスティング記録`;
-  if(!list.length){
-    container.innerHTML=`<div class="empty-state"><div class="icon">🥃</div>履歴がまだありません<br><small>テイスティングタブで「履歴に保存」してください</small></div>`;
-    return;
-  }
-  container.innerHTML=`<div class="history-grid">${list.map(e=>`
-    <div class="history-card" onclick="loadEntry(${JSON.stringify(e).replace(/"/g,'&quot;')})">
-      <button class="btn btn-sm btn-danger h-del" onclick="event.stopPropagation();deleteEntry(${e.id})">🗑</button>
-      <div class="h-name">${getColorSwatch(e.hue)}${e.name||'(名称なし)'}</div>
-      <div class="h-distillery">${e.distillery||''}${e.region?' · '+e.region:''}</div>
-      <div class="h-meta">
-        <span class="h-badge">🗓 ${e.date||e.savedAt?.slice(0,10)||'-'}</span>
-        <span class="h-badge">Age ${e.age}y</span>
-        <span class="h-badge">${e.abv}%</span>
-      </div>
-      ${e.note?`<div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-line;">${e.note.slice(0,60)}${e.note.length>60?'…':''}</div>`:''}
-    </div>`).join('')}</div>`;
-}
-
-function exportJSON(){
-  const list=loadHistory();
-  const blob=new Blob([JSON.stringify(list,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='amber_matrix_history.json'; a.click();
-}
-
-function importJSON(e){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const data=JSON.parse(ev.target.result);
-      if(!Array.isArray(data)){alert('フォーマットが正しくありません');return;}
-      const cur=loadHistory();
-      const merged=[...data,...cur].filter((v,i,a)=>a.findIndex(t=>t.id===v.id)===i);
-      saveHistory(merged); renderHistory();
-      alert(`${data.length}件をインポートしました`);
-    }catch(err){alert('読み込みエラー: '+err.message);}
-  };
-  reader.readAsText(file);
-  e.target.value='';
-}
-
-/* =====================================================
-   COMPARE
-===================================================== */
-let cmpData={a:null,b:null};
-let cmpModalTarget=null;
-
-function openCompareSelect(slot){
-  cmpModalTarget=slot;
-  const list=loadHistory();
-  const modal=$('modal-overlay');
-  const ml=$('modal-list');
-  if(!list.length){
-    ml.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">履歴がありません</div>';
-  } else {
-    ml.innerHTML=list.map(e=>`
-      <div style="padding:10px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:all .2s;"
-        onmouseover="this.style.borderColor='rgba(197,168,128,.4)'"
-        onmouseout="this.style.borderColor='transparent'"
-        onclick="selectForCompare(${e.id})">
-        <div style="font-weight:700;font-size:13px;">${getColorSwatch(e.hue)}${e.name||'(名称なし)'}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${e.distillery||''} ${e.date||''} · Age${e.age}y ${e.abv}%</div>
-      </div>`).join('');
-  }
-  modal.style.display='flex';
-}
-
-function closeModal(){ $('modal-overlay').style.display='none'; }
-
-function selectForCompare(id){
-  const entry=loadHistory().find(e=>e.id===id);
-  if(!entry) return;
-  cmpData[cmpModalTarget]=entry;
-  closeModal();
-  renderCompareSlot(cmpModalTarget, entry);
-  if(cmpData.a && cmpData.b) renderDiff();
-}
-
-function makeMiniSVG(entry){
-  return `<svg viewBox="0 0 1000 1000" style="width:100%;height:100%;display:block;">
-    <defs>
-      <filter id="sg${entry.id}" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="15" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <g opacity="0.2">
-      <circle cx="500" cy="500" r="420" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1"/>
-      <circle cx="500" cy="500" r="300" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-    </g>
-    <path id="oc${entry.id}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 4"/>
-    <circle cx="500" cy="500" r="260" fill="rgba(197,168,128,0.08)" filter="url(#sg${entry.id})"/>
-    <path id="sf${entry.id}" stroke-width="6" filter="url(#sg${entry.id})"/>
-    <text x="500" y="500" text-anchor="middle" dominant-baseline="middle"
-      fill="rgba(233,236,241,0.85)" font-size="28" font-weight="700"
-      style="paint-order:stroke;stroke:rgba(0,0,0,.4);stroke-width:6px;">${entry.name||''}</text>
-  </svg>`;
-}
-
-function renderCompareSlot(slot, entry){
-  const panel=$(`cmp-panel-${slot}`);
-  const btn=$(`cmp-btn-${slot}`);
-  btn.textContent=entry.name||'(名称なし)';
-  panel.style.display='block';
-
-  const infoEl=$(`cmp-info-${slot}`);
-  infoEl.innerHTML=`
-    <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${getColorSwatch(entry.hue)}${entry.name||'(名称なし)'}</div>
-    <div style="font-size:12px;color:var(--muted);">${entry.distillery||''}${entry.region?' · '+entry.region:''}</div>
-    <div class="tag-row" style="margin-top:6px;">
-      <span class="tag">Age ${entry.age}y</span>
-      <span class="tag">${entry.abv}%</span>
-      <span class="tag">🗓 ${entry.date||'-'}</span>
-    </div>
-    ${entry.note?`<div style="margin-top:8px;font-size:11px;color:var(--muted);white-space:pre-line;">${entry.note}</div>`:''}`;
-
-  const stage=$(`cmp-stage-${slot}`);
-  const s=computeState({hue:entry.hue,abv:entry.abv,age:entry.age,round:entry.round,complex:entry.complex,sweet:entry.sweet,rich:entry.rich,move:entry.move});
-
-  // Build radar path
-  const axes5=[s.round,s.complex,s.sweet,s.rich,s.move];
-  const baseR=s.rBase+60,maxExtra=90;
-  const radarPts=axes5.map((val,i)=>{
-    const a=(-90+i*(360/5))*Math.PI/180;
-    const t=(val-1)/4,r=baseR+maxExtra*t;
-    return {x:500+r*Math.cos(a),y:500+r*Math.sin(a)};
-  });
-  let subjD='';
-  for(let i=0;i<5;i++){
-    const p0=radarPts[(i-1+5)%5],p1=radarPts[i],p2=radarPts[(i+1)%5];
-    const cpX=p1.x+(p2.x-p0.x)*0.2,cpY=p1.y+(p2.y-p0.y)*0.2;
-    if(i===0) subjD+=`M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
-    subjD+=` Q ${cpX.toFixed(2)} ${cpY.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-  subjD+=' Z';
-
-  const objPts=polygonPoints(500,500,s.rBase,s.vertices,-90);
-  const objD=roundedPolygonPath(objPts,0);
-  const fillColor=hsl(s.hue,s.sat,s.lightness,s.fillA);
-  const strokeColor=hsl(s.hue,clamp(s.sat+15,0,100),clamp(s.lightness+10,0,100),0.9);
-  const axisNames=['Sharp↔Round','Focused↔Complex','Dry↔Sweet','Light↔Rich','Lively↔Weighty'];
-  const axisLabels=axisNames.map((n,i)=>{
-    const a=(-90+i*72)*Math.PI/180;
-    const lr=baseR+maxExtra+55;
-    return `<text x="${(500+lr*Math.cos(a)).toFixed(1)}" y="${(500+lr*Math.sin(a)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="rgba(233,236,241,0.35)" font-size="22">${n}</text>`;
-  }).join('');
-
-  stage.innerHTML=`<svg viewBox="0 0 1000 1000" style="width:100%;height:100%;display:block;">
-    <defs>
-      <filter id="cmpGlow${slot}" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="12" result="b"/>
-        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-    <g opacity="0.2">
-      <circle cx="500" cy="500" r="420" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1"/>
-      <circle cx="500" cy="500" r="300" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
-      <line x1="500" y1="80" x2="500" y2="920" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-      <line x1="80" y1="500" x2="920" y2="500" stroke="rgba(255,255,255,.05)" stroke-width="1"/>
-    </g>
-    <path d="${objD}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="4 4"/>
-    <circle cx="500" cy="500" r="260" fill="${hsl(s.hue,clamp(s.sat+5,0,100),clamp(s.lightness+12,0,100),0.1)}" filter="url(#cmpGlow${slot})"/>
-    <path d="${subjD}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="${s.strokeW.toFixed(1)}" filter="url(#cmpGlow${slot})"/>
-    ${axisLabels}
-    <text x="500" y="500" text-anchor="middle" dominant-baseline="middle"
-      fill="rgba(233,236,241,0.85)" font-size="28" font-weight="700"
-      style="paint-order:stroke;stroke:rgba(0,0,0,.4);stroke-width:6px;">${entry.name||''}</text>
-  </svg>`;
-}
-
-function renderDiff(){
-  const a=cmpData.a, b=cmpData.b;
-  if(!a||!b) return;
-  $('cmp-diff').style.display='block';
-  const axes=[
-    {key:'age',label:'Age',max:35},
-    {key:'abv',label:'ABV',max:65,min:35},
-    {key:'round',label:'Sharp↔Round',max:5},
-    {key:'complex',label:'Focused↔Comp',max:5},
-    {key:'sweet',label:'Dry↔Sweet',max:5},
-    {key:'rich',label:'Light↔Rich',max:5},
-    {key:'move',label:'Lively↔Weighty',max:5},
+  const flavors = [
+    { n: "Vanilla", c: "sweet", score: 10, symbol: "circle" }, 
+    { n: "Coconut", c: "sweet", score: 7, symbol: "circle" }, 
+    { n: "Toffee", c: "sweet", score: 8, symbol: "circle" }, 
+    { n: "Honey", c: "sweet", score: 8, symbol: "circle" },
+    { n: "Brown Sugar", c: "sweet", score: 9, symbol: "circle" },
+    { n: "Banana", c: "sweet", score: 8, symbol: "circle" },
+    { n: "Pineapple", c: "sweet", score: 8, symbol: "circle" },
+    { n: "Molasses", c: "sweet", score: 9, symbol: "circle" },
+    { n: "Malt", c: "sweet", score: 6, symbol: "circle" },
+    { n: "Raisin", c: "sweet", score: 8, symbol: "diamond" }, 
+    { n: "Fig", c: "sweet", score: 6, symbol: "diamond" }, 
+    { n: "Syrup", c: "sweet", score: 5, symbol: "diamond" },
+    { n: "Apricot", c: "sweet", score: 8, symbol: "diamond" },
+    { n: "Lemon", c: "sweet", score: 7, symbol: "diamond" },
+    { n: "Floral", c: "sweet", score: 8, symbol: "diamond" },
+    { n: "Plum", c: "sweet", score: 8, symbol: "diamond" },
+    { n: "Red Berry", c: "sweet", score: 7, symbol: "diamond" },
+    { n: "Oak", c: "woody", score: 8, symbol: "rect" }, 
+    { n: "Chocolate", c: "sweet", score: 9, symbol: "rect" }, 
+    { n: "Tannin", c: "woody", score: 6, symbol: "rect" },
+    { n: "Coffee", c: "woody", score: 8, symbol: "rect" },
+    { n: "Spice", c: "woody", score: 8, symbol: "triangle" }, 
+    { n: "Sandalwood", c: "woody", score: 9, symbol: "triangle" }, 
+    { n: "Incense", c: "woody", score: 6, symbol: "triangle" },
+    { n: "Nutmeg", c: "woody", score: 7, symbol: "triangle" },
+    { n: "Hops", c: "woody", score: 8, symbol: "triangle" }
   ];
-  const diffEl=$('diff-bars');
-  diffEl.innerHTML=axes.map(ax=>{
-    const min=ax.min||0,range=ax.max-min;
-    const va=Number(a[ax.key]),vb=Number(b[ax.key]);
-    const pa=((va-min)/range*100).toFixed(1), pb=((vb-min)/range*100).toFixed(1);
-    const diff=Math.abs(va-vb);
-    return `<div class="diff-row">
-      <div class="diff-label">${ax.label}</div>
-      <div class="diff-bar-wrap">
-        <div class="diff-bar-a" style="width:${pa}%"></div>
-      </div>
-      <div class="diff-bar-wrap">
-        <div class="diff-bar-b" style="width:${pb}%"></div>
-      </div>
-      <div class="diff-vals">${va} / ${vb}<br><span style="color:${diff>1?'var(--accent2)':'var(--muted)'};font-size:10px;">Δ${diff.toFixed(1)}</span></div>
-    </div>`;
-  }).join('');
-}
 
-/* =====================================================
-   TAB SWITCH
-===================================================== */
-function switchTab(name){
-  document.querySelectorAll('.tab-page').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
-  $(`tab-${name}`)?.classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(btn=>{
-    if(btn.getAttribute('onclick')===`switchTab('${name}')`) btn.classList.add('active');
-  });
-  if(name==='history') renderHistory();
-}
+  window.onload = function() {
+    myChart = echarts.init(document.getElementById('main'));
+    syncParam();
+    window.addEventListener('resize', () => { myChart.resize(); update(); });
+  };
 
-/* =====================================================
-   COMPARE SVG INIT (inject mini SVG HTML)
-===================================================== */
-// Mini SVG slots will use static template — rendered dynamically on select
+  function syncParam() {
+    params.coreName = document.getElementById('i-corename').value.trim() || 'Amber Palette';
+    params.whiskyType = document.getElementById('s-whisky-type').value;
+    params.barrel = document.getElementById('s-barrel').value;
+    params.finish = document.getElementById('s-finish').value; // 後熟の値取得
+    
+    params.spec.age = parseInt(document.getElementById('i-age').value);
+    params.spec.abv = parseInt(document.getElementById('i-abv').value);
+    params.caskSize = parseInt(document.getElementById('i-size').value);
+    params.texture.body = parseInt(document.getElementById('i-body').value);
+    params.texture.crisp = parseInt(document.getElementById('i-crisp').value);
+    params.texture.heat = parseInt(document.getElementById('i-heat').value);
+    params.texture.grip = parseInt(document.getElementById('i-grip').value);
+    params.matrix.sweet = parseInt(document.getElementById('i-sweet').value);
+    params.matrix.woody = parseInt(document.getElementById('i-woody').value);
+    params.intensity.aroma = parseInt(document.getElementById('i-aroma').value);
+    params.intensity.finish = parseInt(document.getElementById('i-finish').value);
+    
+    document.getElementById('v-age').innerText = params.spec.age;
+    document.getElementById('v-abv').innerText = params.spec.abv.toFixed(1);
+    document.getElementById('v-size').innerText = params.caskSize;
+    document.getElementById('v-body').innerText = params.texture.body;
+    document.getElementById('v-crisp').innerText = params.texture.crisp;
+    document.getElementById('v-heat').innerText = params.texture.heat;
+    document.getElementById('v-grip').innerText = params.texture.grip;
+    document.getElementById('v-sweet').innerText = params.matrix.sweet;
+    document.getElementById('v-woody').innerText = params.matrix.woody;
+    document.getElementById('v-aroma').innerText = params.intensity.aroma;
+    document.getElementById('v-finish').innerText = params.intensity.finish;
+    
+    update();
+  }
 
-// ===== INIT =====
-renderHistory();
-$('metaDate').value = new Date().toISOString().slice(0,10);
+  function update() {
+    if(!myChart) return;
+    const width = myChart.getWidth();
+    const height = myChart.getHeight();
+
+    const chartBg = whiskyTypeBg[params.whiskyType] || '#000';
+    document.getElementById('main-container').style.background = chartBg;
+
+    let coreColor = '#c5a880';
+    if(params.texture.heat > 5) {
+        const heatRatio = (params.texture.heat - 5) / 5;
+        coreColor = heatRatio > 0.5 ? '#d97a33' : '#ce9159'; 
+    }
+    const coreGlow = 10 + (params.spec.age * 1.5) + (params.texture.heat * 2);
+
+    const shiftX = (params.matrix.sweet - 5) * 30;
+    const shiftY = (params.matrix.woody - 5) * 30;
+
+    const nodes = [{
+      name: params.coreName, 
+      symbolSize: 60, 
+      itemStyle: { color: coreColor, shadowBlur: coreGlow, shadowColor: coreColor },
+      label: { show: true, position: 'inside', fontSize: 10, fontWeight: 'bold' },
+      x: (width / 2) + shiftX,
+      y: (height / 2) + shiftY,
+      fixed: true 
+    }];
+    
+    const links = [];
+    const baseAtlas = atlasData[params.barrel];
+    const finishAtlas = atlasData[params.finish];
+    
+    const calculatedEdgeLength = 40 + (params.caskSize - 1) * 20;
+    const baseLineWidth = 0.5 + (params.texture.body * 0.3);
+
+    flavors.forEach(f => {
+      const isBaseNote = baseAtlas.notes.includes(f.n);
+      const isFinishNote = finishAtlas.notes.includes(f.n);
+      const isActive = isBaseNote || isFinishNote;
+
+      if (!isActive) {
+        nodes.push({
+          name: f.n, symbol: f.symbol || 'circle', symbolSize: f.score * 2,
+          itemStyle: { color: '#444', opacity: 0.4 }
+        });
+        links.push({
+          source: params.coreName, target: f.n, edgeLength: calculatedEdgeLength,
+          lineStyle: { width: baseLineWidth, color: 'rgba(255,255,255,0.1)' }
+        });
+        return;
+      }
+
+      // ベースとフィニッシュの掛け合わせロジック
+      let nodeColor, lineColor, lineType, lineWidth, edgeLen;
+      
+      if (isBaseNote && isFinishNote) {
+          // 両方に共通する香り（重なって強調される）
+          nodeColor = baseAtlas.color;
+          lineColor = baseAtlas.color;
+          lineType = 'solid';
+          lineWidth = baseLineWidth * 3; // ひときわ太く
+          edgeLen = calculatedEdgeLength * 0.8; // コアに強く結びつく
+      } else if (isBaseNote) {
+          // ベース由来の香り
+          nodeColor = baseAtlas.color;
+          lineColor = baseAtlas.color;
+          lineType = 'solid';
+          lineWidth = baseLineWidth * 2;
+          edgeLen = calculatedEdgeLength;
+      } else {
+          // フィニッシュのみ由来の香り（後付けのニュアンス）
+          nodeColor = finishAtlas.color;
+          lineColor = finishAtlas.color;
+          lineType = 'dashed'; // 破線でニュアンスを表現
+          lineWidth = baseLineWidth * 1.5;
+          edgeLen = calculatedEdgeLength * 1.3; // 少し外側を漂わせる
+      }
+
+      nodes.push({
+        name: f.n,
+        symbol: f.symbol || 'circle',
+        symbolSize: f.score * 3.5,
+        itemStyle: { color: nodeColor, opacity: 1 }
+      });
+
+      links.push({
+        source: params.coreName, target: f.n,
+        edgeLength: edgeLen,
+        lineStyle: { width: lineWidth, color: lineColor, type: lineType }
+      });
+    });
+
+    const explosionForce = (params.intensity.aroma * 50) + (params.spec.abv * 4);
+    
+    let integrationFriction = 0.05 + (params.spec.age * 0.015);
+    integrationFriction -= (params.texture.crisp * 0.005); 
+    if(integrationFriction < 0.01) integrationFriction = 0.01;
+
+    const gripGravity = 0.1 + (params.texture.grip * 0.04) - (params.intensity.finish * 0.02);
+
+    myChart.setOption({
+      backgroundColor: chartBg,
+      series: [{
+        type: 'graph', layout: 'force', data: nodes, links: links,
+        left: 'center', top: 'middle',
+        label: { show: true, position: 'top', color: '#fff', fontSize: 11 },
+        force: { repulsion: explosionForce, gravity: gripGravity, friction: integrationFriction },
+        roam: true, draggable: true
+      }]
+    });
+  }
+
 </script>
 </body>
 </html>
