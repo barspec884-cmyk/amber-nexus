@@ -532,7 +532,6 @@ function buildGraph(svgEl, data, w, h, interactive=true, coreOpts={}) {
 
   const coreName = coreOpts.name || '';
   const coreColor = coreOpts.color || null;
-  const coreAge = coreOpts.ageYears || 0;
   const coreRadius = 30;
 
   const defs = svg.append('defs');
@@ -570,11 +569,10 @@ function buildGraph(svgEl, data, w, h, interactive=true, coreOpts={}) {
   const centerNode = {id:'center', fx:centerX, fy:centerY, radius:30, isCenter:true};
   const allNodes = [centerNode, ...nodes];
 
-  // Links from center to ALL nodes (colored by flavor)
-  const links = nodes.map(n=>({
+  // Links from center to high-weight nodes
+  const links = nodes.filter(n=>n.weight>.35).map(n=>({
     source:'center', target:n.id,
-    strength: n.weight,
-    color: n.color
+    strength: n.weight
   }));
 
   const simulation = d3.forceSimulation(allNodes)
@@ -589,40 +587,18 @@ function buildGraph(svgEl, data, w, h, interactive=true, coreOpts={}) {
   // Draw links
   const linkSel = g.selectAll('.link').data(links).join('line')
     .attr('class','link')
-    .attr('stroke', d=> d.color || '#555')
+    .attr('stroke', d=>{
+      const n=nodes.find(x=>x.id===d.target.id||x.id===d.target);
+      return n?n.color:'#555';
+    })
     .attr('stroke-opacity',.35)
     .attr('stroke-width',d=>1+d.strength*2.5);
 
   // Draw center
-  // Core shape based on age: <12→hexagon(6), 12-17→dodecagon(12), 18+→circle
-  function polygonPoints(cx, cy, r, sides) {
-    const pts = [];
-    for (let i = 0; i < sides; i++) {
-      const angle = (Math.PI * 2 * i / sides) - Math.PI / 2;
-      pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
-    }
-    return pts.join(' ');
-  }
-
-  if (coreAge > 0 && coreAge < 12) {
-    // 六角形
-    g.append('polygon')
-      .attr('points', polygonPoints(centerX, centerY, coreRadius, 6))
-      .attr('fill',`url(#cg-${svgEl.id})`)
-      .attr('filter',`url(#glow-${svgEl.id})`);
-  } else if (coreAge >= 12 && coreAge < 18) {
-    // 十二角形
-    g.append('polygon')
-      .attr('points', polygonPoints(centerX, centerY, coreRadius, 12))
-      .attr('fill',`url(#cg-${svgEl.id})`)
-      .attr('filter',`url(#glow-${svgEl.id})`);
-  } else {
-    // 18年以上 or 年数不明 → 円
-    g.append('circle')
-      .attr('cx',centerX).attr('cy',centerY).attr('r',coreRadius)
-      .attr('fill',`url(#cg-${svgEl.id})`)
-      .attr('filter',`url(#glow-${svgEl.id})`);
-  }
+  g.append('circle')
+    .attr('cx',centerX).attr('cy',centerY).attr('r',coreRadius)
+    .attr('fill',`url(#cg-${svgEl.id})`)
+    .attr('filter',`url(#glow-${svgEl.id})`);
 
   // Core label (brand name)
   if (coreName) {
@@ -1041,10 +1017,7 @@ function onWhiskySelected(val) {
   document.getElementById('cl-sub').textContent = `${flavorData.length} flavors`;
   document.getElementById('cl-title').textContent = brand;
 
-  // 熟成年数を取得
-  const ageYears = parseInt(doc.step1?.ageYears) || 0;
-
-  renderSingle(flavorData, { name: brand, color: coreColor, ageYears: ageYears });
+  renderSingle(flavorData, { name: brand, color: coreColor });
 }
 
 function renderCompare(){

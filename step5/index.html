@@ -94,6 +94,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:
 .score-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--accent-gold);border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer;}
 .score-ticks{display:flex;justify-content:space-between;padding:4px 2px 0;font-family:'EB Garamond',serif;font-size:10px;color:var(--text-light);}
 
+/* Mood */
+.mood-section{margin-bottom:16px;}
+.mood-label{font-size:12px;color:#b8a88a;margin-bottom:8px;font-weight:300;}
+.mood-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.mood-tag{font-size:13px;padding:6px 14px;border-radius:18px;border:1px solid rgba(212,168,83,0.3);background:rgba(212,168,83,0.06);color:var(--text-mid);cursor:pointer;transition:all .2s;font-family:'Noto Sans JP',sans-serif;}
+.mood-tag:hover,.mood-tag.active{background:rgba(212,168,83,0.2);border-color:var(--accent-gold);color:var(--text-dark);}
+
 /* Save */
 .save-area{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 20px;background:linear-gradient(0deg,var(--bg-wood) 60%,transparent);z-index:100;}
 .save-btn{width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--btn-save),var(--accent-amber));color:#fff;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;letter-spacing:2px;cursor:pointer;transition:all .3s;box-shadow:0 4px 16px rgba(184,115,51,0.4);}
@@ -231,6 +238,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:
       </div>
     </div>
 
+    <div class="mood-section animate-in delay-8">
+      <div class="mood-label">Mood — この一杯の気分</div>
+      <div class="mood-tags" id="mood-tags"></div>
+    </div>
   </div>
 
   <div class="save-area"><button class="save-btn" onclick="handleSave()">Save</button></div>
@@ -390,7 +401,9 @@ renderStars();updateSliderBg();
 function updateCount(f){const ta=document.getElementById(f+'-text');const ct=document.getElementById(f+'-count');if(ta&&ct)ct.textContent=ta.value.length;}
 
 /* === MOOD === */
-const activeMoods=new Set();
+const moods=['🌅 リラックス','🎉 特別な一杯','🧐 探求','🤝 シェア','📚 勉強','🌙 ナイトキャップ','☀️ 爽やか','🔥 パワフル','🍂 秋の夜','❄️ 冬の一杯'];
+const activeMoods=new Set();const mc=document.getElementById('mood-tags');
+moods.forEach(m=>{const t=document.createElement('button');t.className='mood-tag';t.textContent=m;t.onclick=()=>{if(activeMoods.has(m)){activeMoods.delete(m);t.classList.remove('active');}else{activeMoods.add(m);t.classList.add('active');}};mc.appendChild(t);});
 
 /* === TOAST === */
 function showToast(icon,msg){const t=document.getElementById('toast');document.getElementById('toast-icon').textContent=icon;document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500);}
@@ -529,6 +542,14 @@ async function loadPreviousSteps() {
         if (slider) slider.value = score;
         const fill = document.getElementById('score-fill');
         if (fill) fill.style.width = score + '%';
+      }
+      if (s.moods && Array.isArray(s.moods)) {
+        s.moods.forEach(m => {
+          activeMoods.add(m);
+          mc.querySelectorAll('.mood-tag').forEach(btn => {
+            if (btn.textContent === m) btn.classList.add('active');
+          });
+        });
       }
     }
   } catch(e) {
