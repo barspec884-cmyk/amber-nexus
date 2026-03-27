@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tasting Impression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@300;400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark:#1a0e08; --bg-wood:#2c1a0e; --bg-wood-light:#3d2615;
+  --card-bg:#f5edd4; --card-bg-alt:#efe5c8; --card-border:#d4c59e;
+  --text-dark:#2c1a0e; --text-mid:#5a4232; --text-light:#8a7562;
+  --accent-amber:#c68a3e; --accent-gold:#d4a853;
+  --accent-teal:#4a8c7e; --accent-teal-dark:#3a7060;
+  --star-empty:#c8b88a; --star-filled:#d4a853;
+  --btn-save:#b87333; --btn-save-hover:#a06228;
+  --shadow-soft:0 2px 12px rgba(0,0,0,0.15);
+  --shadow-card:0 1px 4px rgba(0,0,0,0.08);
+  --deep:#3a2810; --amber-pale:#f5e4c0; --smoke:#8a7a6a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg-dark);min-height:100vh;display:flex;justify-content:center;color:var(--text-dark);}
+.app-container{width:100%;max-width:480px;min-height:100vh;background:linear-gradient(180deg,var(--bg-wood) 0%,var(--bg-wood-light) 50%,var(--bg-wood) 100%);position:relative;overflow-x:hidden;}
+.app-container::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px),repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,0.015) 40px,rgba(255,255,255,0.015) 41px);pointer-events:none;z-index:0;}
+
+/* Header */
+.header{position:sticky;top:0;z-index:100;background:rgba(44,26,14,0.95);backdrop-filter:blur(10px);padding:16px 20px 0;}
+.header-top{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px;}
+.back-btn{position:absolute;left:0;background:none;border:none;color:#d4c59e;font-size:24px;cursor:pointer;padding:4px 8px;transition:color .2s;}
+.back-btn:hover{color:var(--accent-gold);}
+.header-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--card-bg);letter-spacing:1px;}
+.progress-bar{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-teal),var(--accent-teal-dark));border-radius:2px;width:100%;transition:width .6s ease;}
+.lang-toggle{position:absolute;right:0;display:flex;gap:2px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+.lang-btn{background:none;border:none;color:#8a7562;font-size:11px;padding:3px 8px;cursor:pointer;transition:all .2s;}
+.lang-btn.active{background:rgba(255,255,255,0.15);color:var(--card-bg);}
+
+.content{position:relative;z-index:1;padding:20px 16px 140px;}
+
+/* Summary */
+.summary-section{margin-bottom:16px;}
+.summary-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 4px;}
+.summary-step{font-family:'EB Garamond',serif;font-size:11px;color:var(--accent-gold);background:rgba(212,168,83,0.15);padding:2px 8px;border-radius:10px;letter-spacing:.5px;}
+.summary-label{font-size:12px;color:#b8a88a;font-weight:300;}
+.summary-card{background:var(--card-bg);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow-card);border:1px solid var(--card-border);}
+.summary-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.summary-tag{font-size:12px;padding:4px 10px;border-radius:14px;background:rgba(74,140,126,0.1);color:var(--accent-teal-dark);border:1px solid rgba(74,140,126,0.2);}
+.summary-text{font-size:13px;color:var(--text-mid);line-height:1.6;}
+.edit-link{display:inline-block;margin-top:8px;font-size:11px;color:var(--accent-amber);text-decoration:none;cursor:pointer;transition:color .2s;}
+.edit-link:hover{color:var(--btn-save-hover);}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(212,168,83,0.3),transparent);margin:24px 0;}
+
+/* Section title */
+.section-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--card-bg);margin-bottom:4px;}
+.section-subtitle{font-size:12px;color:#8a7562;margin-bottom:16px;font-weight:300;}
+
+/* Impression card */
+.impression-card{background:var(--card-bg);border-radius:12px;padding:0;box-shadow:var(--shadow-soft);border:1px solid var(--card-border);overflow:hidden;margin-bottom:16px;}
+.impression-field{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.06);position:relative;}
+.impression-field:last-child{border-bottom:none;}
+.field-label{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+.field-label-en{font-family:'EB Garamond',serif;font-size:14px;font-weight:600;color:var(--text-dark);}
+.field-label-ja{font-size:12px;color:var(--text-light);font-weight:400;}
+.field-textarea{width:100%;border:none;background:#fff;border-radius:8px;padding:12px;padding-right:40px;font-family:'Noto Sans JP',sans-serif;font-size:14px;line-height:1.7;color:var(--text-dark);resize:none;min-height:80px;outline:none;transition:box-shadow .2s;box-shadow:inset 0 1px 3px rgba(0,0,0,0.06);}
+.field-textarea:focus{box-shadow:inset 0 1px 3px rgba(0,0,0,0.06),0 0 0 2px rgba(74,140,126,0.3);}
+.field-textarea::placeholder{color:#b8a88a;}
+.char-count{position:absolute;bottom:18px;right:22px;font-size:10px;color:#c8b88a;pointer-events:none;}
+
+/* Technique trigger */
+.technique-trigger{position:absolute;top:14px;right:16px;width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(198,138,62,0.35);background:rgba(198,138,62,0.08);color:var(--accent-amber);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1;}
+.technique-trigger:hover{background:rgba(198,138,62,0.2);border-color:var(--accent-amber);}
+
+.ai-assist-row{padding:10px 16px;display:flex;gap:8px;flex-wrap:wrap;}
+.ai-assist-btn{font-size:11px;padding:5px 12px;border-radius:14px;border:1px solid rgba(198,138,62,0.3);background:rgba(198,138,62,0.08);color:var(--accent-amber);cursor:pointer;transition:all .2s;font-family:'Noto Sans JP',sans-serif;}
+.ai-assist-btn:hover{background:rgba(198,138,62,0.15);border-color:rgba(198,138,62,0.5);}
+
+/* ===== STAR RATING — 1pt granularity ===== */
+.rating-section{margin-bottom:16px;}
+.rating-card{background:var(--card-bg);border-radius:12px;padding:16px;box-shadow:var(--shadow-card);border:1px solid var(--card-border);}
+.rating-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.stars-display{display:flex;gap:3px;flex:1;}
+.star-unit{position:relative;width:32px;height:32px;cursor:pointer;}
+.star-unit svg{width:100%;height:100%;display:block;}
+.score-box{display:flex;align-items:baseline;gap:2px;background:#fff;border-radius:10px;padding:8px 14px;border:1px solid var(--card-border);min-width:90px;justify-content:center;}
+.score-input{width:40px;font-family:'EB Garamond',serif;font-size:28px;font-weight:700;color:var(--text-dark);border:none;background:none;text-align:right;outline:none;-moz-appearance:textfield;}
+.score-input::-webkit-inner-spin-button,.score-input::-webkit-outer-spin-button{-webkit-appearance:none;}
+.score-max{font-family:'EB Garamond',serif;font-size:14px;color:var(--text-light);}
+
+.score-slider-wrap{position:relative;padding:0 2px;}
+.score-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:#c8b88a33;outline:none;cursor:pointer;}
+.score-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:var(--accent-gold);border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer;transition:transform .1s;}
+.score-slider::-webkit-slider-thumb:active{transform:scale(1.2);}
+.score-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--accent-gold);border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer;}
+.score-ticks{display:flex;justify-content:space-between;padding:4px 2px 0;font-family:'EB Garamond',serif;font-size:10px;color:var(--text-light);}
+
+/* Save */
+.save-area{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 20px;background:linear-gradient(0deg,var(--bg-wood) 60%,transparent);z-index:100;}
+.save-btn{width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--btn-save),var(--accent-amber));color:#fff;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;letter-spacing:2px;cursor:pointer;transition:all .3s;box-shadow:0 4px 16px rgba(184,115,51,0.4);}
+.save-btn:hover{background:linear-gradient(135deg,var(--btn-save-hover),var(--btn-save));box-shadow:0 6px 24px rgba(184,115,51,0.5);transform:translateY(-1px);}
+.save-btn:active{transform:translateY(0);}
+
+/* ===== BOTTOM DRAWER ===== */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.drawer-overlay.open{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;bottom:0;left:50%;width:100%;max-width:480px;background:var(--card-bg);border-radius:16px 16px 0 0;z-index:201;transform:translate(-50%,100%);transition:transform .35s cubic-bezier(.32,.72,.24,1.02);max-height:65vh;display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(0,0,0,0.3);}
+.drawer.open{transform:translate(-50%,0);}
+.drawer-handle{text-align:center;padding:10px 0 6px;cursor:grab;flex-shrink:0;}
+.drawer-handle-bar{width:40px;height:4px;background:#ccc;border-radius:2px;margin:0 auto;}
+.drawer-header{display:flex;align-items:center;gap:10px;padding:0 16px 10px;border-bottom:1px solid rgba(0,0,0,0.06);flex-shrink:0;}
+.drawer-title{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:700;color:var(--deep);flex:1;}
+.drawer-mode-toggle{display:flex;gap:0;border:1.5px solid rgba(198,138,62,0.35);border-radius:6px;overflow:hidden;}
+.drawer-mode-btn{padding:5px 10px;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--smoke);cursor:pointer;transition:.2s;font-family:'Noto Sans JP',sans-serif;}
+.drawer-mode-btn.active{background:var(--deep);color:var(--accent-gold);}
+.drawer-mode-btn:not(.active):hover{background:rgba(198,138,62,0.08);}
+.drawer-close{background:none;border:none;font-size:20px;color:var(--smoke);cursor:pointer;padding:4px 8px;}
+.target-indicator{font-size:11px;color:var(--accent-teal-dark);padding:6px 16px;background:rgba(74,140,126,0.1);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.target-indicator-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-teal);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.drawer-tabs{display:flex;gap:0;margin:0;border-bottom:1px solid rgba(200,136,42,0.15);background:#fff;flex-shrink:0;}
+.drawer-tab{flex:1;padding:10px 4px;border:none;background:transparent;font-family:'Noto Serif JP',serif;font-size:12px;font-weight:700;color:var(--smoke);cursor:pointer;transition:.2s;text-align:center;border-bottom:2px solid transparent;}
+.drawer-tab.active{color:var(--deep);border-bottom-color:var(--accent-amber);}
+.drawer-tab:not(.active):hover{background:rgba(200,136,42,0.04);}
+.drawer-tab-label{display:block;font-size:9px;font-weight:400;opacity:.7;margin-top:1px;}
+.drawer-body{overflow-y:auto;padding:12px 16px 20px;flex:1;}
+.drawer-panel{display:none;}
+.drawer-panel.active{display:block;}
+.drawer-hint{font-size:12px;color:var(--smoke);margin-bottom:10px;line-height:1.6;}
+.drawer-select{width:100%;padding:10px 36px 10px 12px;border:1.5px solid rgba(200,136,42,0.4);border-radius:8px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8882a' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;font-family:'Noto Serif JP',serif;font-size:14px;color:var(--text-dark);outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;transition:.2s;margin-bottom:8px;}
+.drawer-select:focus{border-color:var(--accent-amber);box-shadow:0 0 0 3px rgba(200,136,42,0.12);}
+.drawer-add-btn{width:100%;background:var(--accent-amber);color:#fff;border:none;padding:11px 16px;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:8px;}
+.drawer-add-btn:active{background:var(--deep);}
+.drawer-free-wrap{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.drawer-free-input{flex:1;padding:10px 12px;border:1.5px dashed rgba(200,136,42,0.4);border-radius:8px;background:rgba(255,255,255,0.7);font-family:'Noto Sans JP',sans-serif;font-size:14px;color:var(--text-dark);outline:none;transition:.2s;}
+.drawer-free-input::placeholder{color:var(--smoke);font-size:13px;}
+.drawer-free-input:focus{border-color:var(--accent-amber);border-style:solid;background:#fff;}
+.drawer-free-add{background:var(--deep);color:var(--accent-gold);border:none;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.2s;}
+.drawer-free-add:active{background:var(--accent-amber);color:#fff;}
+.drawer-selected-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.dtag{display:inline-flex;align-items:center;gap:5px;background:var(--amber-pale);border:1px solid rgba(200,136,42,0.4);color:var(--deep);padding:5px 10px 5px 14px;border-radius:20px;font-size:13px;animation:tagPop .15s ease;cursor:pointer;transition:all .15s;}
+.dtag.free-tag{background:#fff;border-style:dashed;}
+.dtag:hover{background:rgba(200,136,42,0.25);}
+.dtag-remove{background:none;border:none;cursor:pointer;color:var(--smoke);font-size:14px;line-height:1;padding:0 2px;}
+.dtag-remove:hover{color:var(--accent-amber);}
+.dtag-insert-hint{font-size:9px;color:var(--accent-amber);margin-left:2px;}
+@keyframes tagPop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);background:rgba(44,26,14,0.95);color:var(--card-bg);padding:20px 32px;border-radius:12px;font-size:15px;z-index:300;opacity:0;pointer-events:none;transition:all .3s ease;text-align:center;backdrop-filter:blur(8px);border:1px solid rgba(212,168,83,0.2);}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.toast-icon{font-size:32px;display:block;margin-bottom:8px;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.animate-in{animation:fadeUp .5s ease both;}
+.delay-1{animation-delay:.05s;}.delay-2{animation-delay:.1s;}.delay-3{animation-delay:.15s;}.delay-4{animation-delay:.2s;}.delay-5{animation-delay:.25s;}.delay-6{animation-delay:.3s;}.delay-7{animation-delay:.35s;}.delay-8{animation-delay:.4s;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(212,168,83,0.3);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app-container" id="app">
+  <div class="header">
+    <div class="header-top">
+      <button class="back-btn" onclick="history.back()">❮</button>
+      <span class="header-title">Tasting Impression</span>
+      <div class="lang-toggle">
+        <button class="lang-btn active" onclick="setLang('ja')">JP</button>
+        <button class="lang-btn" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+
+  <div class="content">
+    <div class="summary-section animate-in delay-1"><div class="summary-header"><span class="summary-step">Step 1</span><span class="summary-label">基本情報 Basic Info</span></div><div class="summary-card"><div class="summary-tags" id="basic-tags"><span class="summary-tag">📷 写真未設定</span></div><p class="summary-text" style="margin-top:8px" id="basic-text">銘柄・蒸留所などの情報がここに表示されます</p><a class="edit-link" href="/step1/">✎ 編集する</a></div></div>
+    <div class="summary-section animate-in delay-2"><div class="summary-header"><span class="summary-step">Step 2</span><span class="summary-label">視覚 Visual Analysis</span></div><div class="summary-card"><div class="summary-tags" id="visual-tags"><span class="summary-tag">🥃 グラス未選択</span><span class="summary-tag">🎨 色未選択</span></div><a class="edit-link" href="/step2/">✎ 編集する</a></div></div>
+    <div class="summary-section animate-in delay-3"><div class="summary-header"><span class="summary-step">Step 3</span><span class="summary-label">香り Aroma / Nosing</span></div><div class="summary-card"><div class="summary-tags" id="aroma-tags"><span class="summary-tag">選択されたアロマがここに表示</span></div><a class="edit-link" href="/step3/">✎ 編集する</a></div></div>
+    <div class="summary-section animate-in delay-4"><div class="summary-header"><span class="summary-step">Step 4</span><span class="summary-label">味わい・余韻 Palate & Finish</span></div><div class="summary-card"><div class="summary-tags" id="palate-tags"><span class="summary-tag">座標・強度・味わいの情報がここに表示</span></div><a class="edit-link" href="/step4/">✎ 編集する</a></div></div>
+
+    <div class="divider animate-in delay-5"></div>
+
+    <div class="animate-in delay-5">
+      <div class="section-title">05 &nbsp; Impression</div>
+      <div class="section-subtitle">テイスティングの印象をまとめる — 🛠 でテクニック編を呼び出せます</div>
+    </div>
+
+    <div class="impression-card animate-in delay-6">
+      <div class="impression-field">
+        <div class="field-label"><span class="field-label-en">Aroma</span><span class="field-label-ja">香り</span></div>
+        <button class="technique-trigger" onclick="openDrawer('aroma')" title="テクニック編">🛠</button>
+        <textarea class="field-textarea" id="aroma-text" placeholder="香りの全体的な印象を自由に記述…" rows="3" oninput="updateCount('aroma')" onfocus="setActiveField('aroma')"></textarea>
+        <span class="char-count" id="aroma-count">0</span>
+      </div>
+      <div class="impression-field">
+        <div class="field-label"><span class="field-label-en">Flavor</span><span class="field-label-ja">味わい</span></div>
+        <button class="technique-trigger" onclick="openDrawer('flavor')" title="テクニック編">🛠</button>
+        <textarea class="field-textarea" id="flavor-text" placeholder="味わいの全体的な印象を自由に記述…" rows="3" oninput="updateCount('flavor')" onfocus="setActiveField('flavor')"></textarea>
+        <span class="char-count" id="flavor-count">0</span>
+      </div>
+      <div class="impression-field">
+        <div class="field-label"><span class="field-label-en">Finish</span><span class="field-label-ja">余韻</span></div>
+        <button class="technique-trigger" onclick="openDrawer('finish')" title="テクニック編">🛠</button>
+        <textarea class="field-textarea" id="finish-text" placeholder="余韻の長さや変化を自由に記述…" rows="3" oninput="updateCount('finish')" onfocus="setActiveField('finish')"></textarea>
+        <span class="char-count" id="finish-count">0</span>
+      </div>
+      <div class="impression-field">
+        <div class="field-label"><span class="field-label-en">Total</span><span class="field-label-ja">総合評価</span></div>
+        <button class="technique-trigger" onclick="openDrawer('total')" title="テクニック編">🛠</button>
+        <textarea class="field-textarea" id="total-text" placeholder="全体を通じた感想、他のウイスキーとの比較など…" rows="3" oninput="updateCount('total')" onfocus="setActiveField('total')"></textarea>
+        <span class="char-count" id="total-count">0</span>
+      </div>
+      <div class="ai-assist-row">
+        <button class="ai-assist-btn" onclick="showToast('🤖','AI要約機能は開発中です')">✨ AIで要約</button>
+        <button class="ai-assist-btn" onclick="showToast('📋','テンプレートは開発中です')">📋 テンプレート</button>
+      </div>
+    </div>
+
+    <!-- Rating -->
+    <div class="rating-section animate-in delay-7">
+      <div class="rating-card">
+        <div class="rating-top">
+          <div class="stars-display" id="stars-display"></div>
+          <div class="score-box">
+            <input type="number" class="score-input" id="score-input" value="0" min="0" max="100" oninput="onScoreInput(this)">
+            <span class="score-max">/ 100</span>
+          </div>
+        </div>
+        <div class="score-slider-wrap">
+          <input type="range" class="score-slider" id="score-slider" min="0" max="100" value="0" oninput="onSliderInput(this)">
+        </div>
+        <div class="score-ticks"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="save-area"><button class="save-btn" onclick="handleSave()">Save</button></div>
+  <div class="toast" id="toast"><span class="toast-icon" id="toast-icon"></span><span id="toast-msg"></span></div>
+</div>
+
+<!-- Bottom Drawer -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"><div class="drawer-handle-bar"></div></div>
+  <div class="drawer-header">
+    <div class="drawer-title">🛠 テクニック編</div>
+    <div class="drawer-mode-toggle">
+      <button class="drawer-mode-btn active" data-mode="insert" onclick="setDrawerMode('insert')">挿入</button>
+      <button class="drawer-mode-btn" data-mode="ref" onclick="setDrawerMode('ref')">参照</button>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div id="drawer-target" class="target-indicator"><div class="target-indicator-dot"></div><span id="drawer-target-text">Aroma に挿入</span></div>
+  <div class="drawer-tabs">
+    <button class="drawer-tab active" data-tab="05" onclick="setDrawerTab('05')">逃げワード<span class="drawer-tab-label">Escape</span></button>
+    <button class="drawer-tab" data-tab="06" onclick="setDrawerTab('06')">深めるワード<span class="drawer-tab-label">Deep</span></button>
+    <button class="drawer-tab" data-tab="07" onclick="setDrawerTab('07')">フレーズ<span class="drawer-tab-label">Phrase</span></button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-panel active" id="dpanel-05">
+      <p class="drawer-hint">どんな表現にも前後に添えるだけで使えます。タグをタップで挿入。</p>
+      <select class="drawer-select" id="dsel-05"></select>
+      <button class="drawer-add-btn" onclick="dAddFromSelect('05')">＋ 追加</button>
+      <div class="drawer-free-wrap"><input class="drawer-free-input" id="dfree-05" placeholder="✏️ 自由入力" onkeydown="if(event.key==='Enter')dAddFree('05')"><button class="drawer-free-add" onclick="dAddFree('05')">追加</button></div>
+      <div class="drawer-selected-tags" id="dtags-05"></div>
+    </div>
+    <div class="drawer-panel" id="dpanel-06">
+      <p class="drawer-hint">香りや味わいの前後に組み合わせて使います。タグをタップで挿入。</p>
+      <select class="drawer-select" id="dsel-06"></select>
+      <button class="drawer-add-btn" onclick="dAddFromSelect('06')">＋ 追加</button>
+      <div class="drawer-free-wrap"><input class="drawer-free-input" id="dfree-06" placeholder="✏️ 自由入力" onkeydown="if(event.key==='Enter')dAddFree('06')"><button class="drawer-free-add" onclick="dAddFree('06')">追加</button></div>
+      <div class="drawer-selected-tags" id="dtags-06"></div>
+    </div>
+    <div class="drawer-panel" id="dpanel-07">
+      <p class="drawer-hint">形容詞を組み合わせてフレーズを生成します。タグをタップで挿入。</p>
+      <select class="drawer-select" id="dsel-07"></select>
+      <button class="drawer-add-btn" onclick="dAddFromSelect('07')">＋ 追加</button>
+      <div class="drawer-free-wrap"><input class="drawer-free-input" id="dfree-07" placeholder="✏️ 自由入力" onkeydown="if(event.key==='Enter')dAddFree('07')"><button class="drawer-free-add" onclick="dAddFree('07')">追加</button></div>
+      <div class="drawer-selected-tags" id="dtags-07"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* === LANG === */
+let LANG='ja';
+function setLang(l){LANG=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===(l==='ja'?'JP':'EN')));populateAllDrawer();}
+
+/* === TECHNIQUE DATA === */
+const D05={ja:[
+{g:'微量・弱め',items:[{l:'かすかに',h:'例:「かすかにスモーキー」'},{l:'ほんのり',h:'例:「ほんのり甘い」'},{l:'うっすらと',h:'例:「うっすらとヨード」'},{l:'微かな',h:'例:「微かなフローラル」'},{l:'淡い',h:'例:「淡いフルーティーさ」'},{l:'いくらか',h:'例:「いくらかスパイシー」'}]},
+{g:'程度・曖昧',items:[{l:'やや',h:'例:「やや辛口」'},{l:'どことなく',h:'例:「どことなく熟成感」'},{l:'なんとなく',h:'例:「なんとなく重厚感」'},{l:'〜っぽい',h:'例:「〜っぽいスモーク」'},{l:'〜のような',h:'例:「バニラのような甘さ」'}]},
+{g:'質感・方向性',items:[{l:'優しく',h:'例:「優しく広がる香り」'},{l:'穏やかな',h:'例:「穏やかなタンニン」'},{l:'控えめな',h:'例:「控えめな酸味」'},{l:'繊細な',h:'例:「繊細なフローラルノート」'},{l:'しなやかな',h:'例:「しなやかな口当たり」'},{l:'まるみのある',h:'例:「まるみのある甘さ」'},{l:'余韻の長い',h:'例:「余韻の長いスモーキーさ」'}]}
+],en:[
+{g:'Subtle / Light',items:[{l:'faintly',h:'"faintly smoky"'},{l:'slightly',h:'"slightly sweet"'},{l:'a hint of',h:'"a hint of iodine"'},{l:'delicate',h:'"delicate floral"'},{l:'subtle',h:'"subtle fruitiness"'},{l:'somewhat',h:'"somewhat spicy"'}]},
+{g:'Degree / Vague',items:[{l:'rather',h:'"rather dry"'},{l:'somehow',h:'"somehow aged"'},{l:'vaguely',h:'"vaguely rich"'},{l:'-ish',h:'"smoky-ish"'},{l:'-like',h:'"vanilla-like sweetness"'}]},
+{g:'Quality / Direction',items:[{l:'gently',h:'"gently spreading aroma"'},{l:'mild',h:'"mild tannins"'},{l:'restrained',h:'"restrained acidity"'},{l:'delicate',h:'"delicate floral notes"'},{l:'supple',h:'"supple mouthfeel"'},{l:'rounded',h:'"rounded sweetness"'},{l:'lingering',h:'"lingering smokiness"'}]}
+]};
+const D06={ja:[
+{l:'〜のヒント',h:'例:「スモークのヒント」'},{l:'〜の痕跡',h:'例:「ピートの痕跡」'},{l:'〜のアクセント',h:'例:「オークのアクセント」'},{l:'〜のタッチ',h:'例:「フルーツのタッチ」'},{l:'背景に〜',h:'例:「背景にバニラ」'},{l:'〜のニュアンス',h:'例:「熟成のニュアンス」'},{l:'〜の余韻',h:'例:「チョコの余韻」'},{l:'〜の面影',h:'例:「昔のピートの面影」'},{l:'〜の気配',h:'例:「スモークの気配」'},{l:'〜を纏う',h:'例:「バニラを纏う」'},{l:'〜の印象',h:'例:「フルーツの印象」'},{l:'〜の奥行き',h:'例:「熟成の奥行き」'}
+],en:[
+{l:'a hint of ~',h:'"a hint of smoke"'},{l:'traces of ~',h:'"traces of peat"'},{l:'an accent of ~',h:'"an accent of oak"'},{l:'a touch of ~',h:'"a touch of fruit"'},{l:'~ in the background',h:'"vanilla in the background"'},{l:'nuances of ~',h:'"nuances of maturity"'},{l:'echoes of ~',h:'"echoes of chocolate"'},{l:'whispers of ~',h:'"whispers of old peat"'},{l:'a sense of ~',h:'"a sense of smoke"'},{l:'draped in ~',h:'"draped in vanilla"'},{l:'impressions of ~',h:'"impressions of fruit"'},{l:'depth of ~',h:'"depth of maturity"'}
+]};
+const D07={ja:[
+{g:'🎵 全体の印象',items:[{l:'重厚な',h:'どっしりとした厚み'},{l:'メロウな',h:'柔らかく甘く熟した印象'},{l:'潮気を含んだ',h:'海辺を思わせるソルティーなニュアンス'},{l:'複雑に絡み合う',h:'多層的な香味が絡み合っている'},{l:'エレガントな',h:'洗練された上品さ'}]},
+{g:'🔥 個性',items:[{l:'ピーティーな',h:'泥炭香が主役'},{l:'スモーキーな',h:'燻煙の香りが特徴的'},{l:'フルーティーな',h:'果実感が豊か'},{l:'スパイシーな',h:'スパイスの刺激が際立つ'},{l:'まろやかな',h:'角が取れて丸みのある穏やかな味わい'},{l:'野性的な',h:'未馴化の力強さ'}]},
+{g:'✨ 品格・余韻',items:[{l:'穏やかで上品な',h:'主張が控えめで品のある佇まい'},{l:'熟成感ある',h:'長い年月を経た深みと複雑さ'},{l:'力強く骨格のある',h:'しっかりとしたストラクチャー'},{l:'凛とした',h:'引き締まった清潔感のある印象'},{l:'余韻が長く深い',h:'飲み込んだ後も長く続く深い余韻'},{l:'奥行きのある',h:'一口で語り尽くせない多層的な味わい'},{l:'繊細で複雑な',h:'繊細でありながら複雑。高品質の証'}]}
+],en:[
+{g:'🎵 Overall',items:[{l:'Rich and weighty',h:'Dense and substantial'},{l:'Mellow',h:'Soft, sweet, matured'},{l:'Briny',h:'Salty coastal character'},{l:'Intricately layered',h:'Multiple flavors interwoven'},{l:'Elegant',h:'Refined and sophisticated'}]},
+{g:'🔥 Character',items:[{l:'Peaty',h:'Peat smoke center stage'},{l:'Smoky',h:'Distinct smoke'},{l:'Fruity',h:'Abundant fruit'},{l:'Spicy',h:'Prominent spice'},{l:'Mellow and smooth',h:'Rounded and gentle'},{l:'Wild',h:'Untamed primal strength'}]},
+{g:'✨ Elegance',items:[{l:'Gentle and refined',h:'Understated dignity'},{l:'Well-aged',h:'Depth from maturation'},{l:'Bold and structured',h:'Strong backbone'},{l:'Crisp and clean',h:'Tight fresh impression'},{l:'Long deep finish',h:'Extended lingering aftertaste'},{l:'Layered depth',h:'Multi-dimensional'},{l:'Delicate yet complex',h:'Subtle complexity'}]}
+]};
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escA(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function buildGroupedOpts(groups){
+  let h='<option value="">'+(LANG==='ja'?'💡 選んでください':'💡 Select')+'</option>';
+  groups.forEach(g=>{
+    if(g.g){h+=`<optgroup label="${esc(g.g)}">`;(g.items||[]).forEach(d=>{h+=`<option value="${escA(d.l)}" data-hint="${escA(d.h)}">${esc(d.l)}</option>`;});h+='</optgroup>';}
+    else{h+=`<option value="${escA(g.l)}" data-hint="${escA(g.h)}">${esc(g.l)}</option>`;}
+  });return h;
+}
+function populateDrawer(n){const sel=document.getElementById('dsel-'+n);const data=n==='05'?D05[LANG]:n==='06'?D06[LANG]:D07[LANG];sel.innerHTML=data.length?buildGroupedOpts(data):'<option>—</option>';}
+function populateAllDrawer(){['05','06','07'].forEach(populateDrawer);}
+
+/* === DRAWER STATE === */
+let activeField='aroma';
+let drawerMode='insert';
+const fieldNames={aroma:'Aroma（香り）',flavor:'Flavor（味わい）',finish:'Finish（余韻）',total:'Total（総合評価）'};
+
+function setActiveField(f){activeField=f;updateTargetIndicator();}
+function updateTargetIndicator(){
+  const el=document.getElementById('drawer-target');
+  const txt=document.getElementById('drawer-target-text');
+  if(drawerMode==='insert'){el.style.display='flex';txt.textContent=fieldNames[activeField]+' に挿入';}
+  else{el.style.display='none';}
+}
+function openDrawer(field){if(field)activeField=field;updateTargetIndicator();document.getElementById('drawer-overlay').classList.add('open');document.getElementById('drawer').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer-overlay').classList.remove('open');document.getElementById('drawer').classList.remove('open');}
+function setDrawerMode(m){drawerMode=m;document.querySelectorAll('.drawer-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));updateTargetIndicator();document.querySelectorAll('.dtag-insert-hint').forEach(el=>{el.style.display=m==='insert'?'inline':'none';});}
+function setDrawerTab(n){document.querySelectorAll('.drawer-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===n));document.querySelectorAll('.drawer-panel').forEach(p=>p.classList.remove('active'));document.getElementById('dpanel-'+n).classList.add('active');}
+
+function dAddFromSelect(n){const sel=document.getElementById('dsel-'+n);if(!sel.value)return;dAddTag(n,sel.value,false);sel.value='';}
+function dAddFree(n){const input=document.getElementById('dfree-'+n);const w=input.value.trim();if(!w)return;dAddTag(n,w,true);input.value='';}
+function dAddTag(n,word,isFree){
+  const c=document.getElementById('dtags-'+n);
+  if(Array.from(c.querySelectorAll('.dtag')).some(t=>t.dataset.word===word))return;
+  const tag=document.createElement('span');
+  tag.className='dtag'+(isFree?' free-tag':'');tag.dataset.word=word;
+  const hintVis=drawerMode==='insert'?'inline':'none';
+  tag.innerHTML=esc(word)+'<span class="dtag-insert-hint" style="display:'+hintVis+'">⏎</span><button class="dtag-remove" onclick="event.stopPropagation();this.closest(\'.dtag\').remove()">×</button>';
+  tag.onclick=function(e){if(e.target.classList.contains('dtag-remove'))return;if(drawerMode==='insert')insertWordToField(word);};
+  c.appendChild(tag);
+}
+function insertWordToField(word){
+  const ta=document.getElementById(activeField+'-text');
+  const start=ta.selectionStart;const end=ta.selectionEnd;
+  const before=ta.value.substring(0,start);const after=ta.value.substring(end);
+  const sep=(before.length>0&&!before.endsWith(' ')&&!before.endsWith('、')&&!before.endsWith('\n'))?' ':'';
+  ta.value=before+sep+word+after;ta.focus();
+  const np=start+sep.length+word.length;ta.setSelectionRange(np,np);
+  updateCount(activeField);
+  showToast('✅','"'+word+'" を挿入');
+}
+
+/* === STAR RATING — 1pt === */
+let score=0;
+const starsEl=document.getElementById('stars-display');
+const slider=document.getElementById('score-slider');
+const scoreInput=document.getElementById('score-input');
+
+function renderStars(){
+  starsEl.innerHTML='';
+  const fillCount=score/20;
+  for(let i=0;i<5;i++){
+    const unit=document.createElement('div');unit.className='star-unit';
+    const fill=Math.min(1,Math.max(0,fillCount-i));
+    const id='sg'+i;
+    unit.innerHTML=`<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${id}"><stop offset="${fill*100}%" stop-color="#d4a853"/><stop offset="${fill*100}%" stop-color="transparent"/></linearGradient></defs><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z" fill="url(#${id})" stroke="#c8b88a" stroke-width="1"/></svg>`;
+    unit.onclick=()=>{const ns=(i+1)*20;score=(score===ns)?i*20:ns;syncScore();};
+    starsEl.appendChild(unit);
+  }
+}
+function syncScore(){scoreInput.value=score;slider.value=score;updateSliderBg();renderStars();}
+function onSliderInput(el){score=parseInt(el.value);scoreInput.value=score;updateSliderBg();renderStars();}
+function onScoreInput(el){let v=parseInt(el.value);if(isNaN(v))v=0;if(v>100)v=100;if(v<0)v=0;el.value=v;score=v;slider.value=v;updateSliderBg();renderStars();}
+function updateSliderBg(){slider.style.background=`linear-gradient(90deg,#d4a853 0%,#d4a853 ${score}%,#c8b88a33 ${score}%,#c8b88a33 100%)`;}
+renderStars();updateSliderBg();
+
+/* === UTIL === */
+function updateCount(f){const ta=document.getElementById(f+'-text');const ct=document.getElementById(f+'-count');if(ta&&ct)ct.textContent=ta.value.length;}
+
+/* === MOOD === */
+const activeMoods=new Set();
+
+/* === TOAST === */
+function showToast(icon,msg){const t=document.getElementById('toast');document.getElementById('toast-icon').textContent=icon;document.getElementById('toast-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500);}
+
+/* === SAVE === */
+function handleSave(){const data={aroma:document.getElementById('aroma-text').value,flavor:document.getElementById('flavor-text').value,finish:document.getElementById('finish-text').value,total:document.getElementById('total-text').value,score,moods:[...activeMoods],savedAt:new Date().toISOString()};console.log('Saved:',data);showToast('🥃','保存中...');saveToFirestore(data);}
+
+/* === INIT === */
+populateAllDrawer();
+
+// Firestore版のデータ読み込み・保存
+const _API_URL = '/api/firestore';
+
+function _getSessionId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('session') || localStorage.getItem('amber_session_id') || null;
+}
+function _setSessionId(id) { localStorage.setItem('amber_session_id', id); }
+const _SESSION_ID = _getSessionId();
+if (_SESSION_ID) _setSessionId(_SESSION_ID);
+
+// 編集リンクにセッションIDを付与
+document.querySelectorAll('.edit-link').forEach(link => {
+  if (_SESSION_ID && link.href) {
+    const url = new URL(link.href, window.location.origin);
+    url.searchParams.set('session', _SESSION_ID);
+    link.href = url.toString();
+  }
+});
+
+async function saveToFirestore(step5Data) {
+  if (!_SESSION_ID) {
+    showToast('⚠️','セッションがありません');
+    return;
+  }
+  try {
+    const resp = await fetch(_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        docId: _SESSION_ID,
+        data: { step5: step5Data, status: 'completed', currentStep: 5 }
+      })
+    });
+    if (!resp.ok) throw new Error('保存に失敗しました');
+    showToast('🥃','保存しました！');
+    // 2秒後にダッシュボードへ遷移するか聞く
+    setTimeout(() => {
+      if (confirm('ダッシュボードで記録を確認しますか？')) {
+        window.location.href = '/dashboard/';
+      }
+    }, 500);
+  } catch(e) {
+    console.error('Save error:', e);
+    showToast('⚠️','保存に失敗: ' + e.message);
+  }
+}
+
+async function loadPreviousSteps() {
+  if (!_SESSION_ID) {
+    // セッションIDがない場合はフォールバック（localStorage）
+    loadPreviousStepsFromLocal();
+    return;
+  }
+  try {
+    const resp = await fetch(_API_URL + '?doc=' + _SESSION_ID);
+    const result = await resp.json();
+    if (!result.exists || !result.data) {
+      loadPreviousStepsFromLocal();
+      return;
+    }
+    const d = result.data;
+
+    // Step1 サマリー
+    if (d.step1) {
+      const s = d.step1;
+      const t = [];
+      if (s.brand) t.push('🥃 ' + s.brand);
+      if (s.distillery) t.push('🏭 ' + s.distillery);
+      if (s.age) t.push('📅 ' + s.age);
+      if (s.abv) t.push('🔥 ' + s.abv + '%');
+      if (t.length) {
+        document.getElementById('basic-tags').innerHTML = t.map(x => `<span class="summary-tag">${x}</span>`).join('');
+        document.getElementById('basic-text').textContent = [s.brand, s.distillery, s.country].filter(Boolean).join(' · ');
+      }
+    }
+
+    // Step2 サマリー
+    if (d.step2) {
+      const s = d.step2;
+      const t = [];
+      if (s.selectedGlass) t.push('🥃 ' + s.selectedGlass);
+      if (s.selectedColor) t.push('🎨 ' + (s.selectedColor.nameJa || s.selectedColor.name || ''));
+      if (s.sliders) t.push('💧 Speed: ' + (s.sliders.speed || '') + ' / Visc: ' + (s.sliders.visc || ''));
+      if (t.length) document.getElementById('visual-tags').innerHTML = t.map(x => `<span class="summary-tag">${x}</span>`).join('');
+    }
+
+    // Step3 サマリー
+    if (d.step3 && d.step3.selectedScores) {
+      const scores = d.step3.selectedScores;
+      const topAromas = Object.entries(scores)
+        .filter(([k,v]) => v >= 3)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([k,v]) => k.replace(/_/g, ' '));
+      if (topAromas.length) {
+        document.getElementById('aroma-tags').innerHTML = topAromas.map(a => `<span class="summary-tag">🌿 ${a}</span>`).join('');
+      }
+    }
+
+    // Step4 サマリー
+    if (d.step4) {
+      const s = d.step4;
+      const t = [];
+      if (s.matrix) t.push('📊 Flavor座標設定済');
+      if (s.intensity) t.push('📈 強度設定済');
+      if (s.tags) {
+        Object.values(s.tags).forEach(tagList => {
+          tagList.forEach(tag => t.push(tag.word));
+        });
+      }
+      if (t.length) document.getElementById('palate-tags').innerHTML = t.slice(0,8).map(x => `<span class="summary-tag">${x}</span>`).join('');
+    }
+
+    // Step5のデータがあれば復元
+    if (d.step5) {
+      const s = d.step5;
+      if (s.aroma) document.getElementById('aroma-text').value = s.aroma;
+      if (s.flavor) document.getElementById('flavor-text').value = s.flavor;
+      if (s.finish) document.getElementById('finish-text').value = s.finish;
+      if (s.total) document.getElementById('total-text').value = s.total;
+      if (s.score !== undefined) {
+        score = s.score;
+        document.getElementById('score-display').textContent = score;
+        const slider = document.getElementById('score-slider');
+        if (slider) slider.value = score;
+        const fill = document.getElementById('score-fill');
+        if (fill) fill.style.width = score + '%';
+      }
+    }
+  } catch(e) {
+    console.error('Load error:', e);
+    loadPreviousStepsFromLocal();
+  }
+}
+
+// フォールバック（旧localStorage読み込み）
+function loadPreviousStepsFromLocal() {
+  try{const s=localStorage.getItem('amber-step1');if(s){const d=JSON.parse(s);const t=[];if(d.brand)t.push('🥃 '+d.brand);if(d.distillery)t.push('🏭 '+d.distillery);if(d.age)t.push('📅 '+d.age);if(d.abv)t.push('🔥 '+d.abv+'%');if(t.length){document.getElementById('basic-tags').innerHTML=t.map(x=>`<span class="summary-tag">${x}</span>`).join('');document.getElementById('basic-text').textContent=[d.brand,d.distillery,d.country].filter(Boolean).join(' · ');}}}catch(e){}
+  try{const s=localStorage.getItem('amber-step2');if(s){const d=JSON.parse(s);const t=[];if(d.glass)t.push('🥃 '+d.glass);if(d.color)t.push('🎨 '+d.color);if(d.legs)t.push('💧 Legs: '+d.legs);if(t.length)document.getElementById('visual-tags').innerHTML=t.map(x=>`<span class="summary-tag">${x}</span>`).join('');}}catch(e){}
+}
+loadPreviousSteps();
+try{const saved=localStorage.getItem('whisky_tasting_tags');if(saved){const all=JSON.parse(saved);Object.keys(all).forEach(id=>{const n=id.replace('tags-','');if(['05','06','07'].includes(n))all[id].forEach(t=>dAddTag(n,t.word,t.isFree));});}}catch(e){}
+</script>
+</body>
+</html>

@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Amber Palette — Aroma Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<script>
+(function(){
+  var urls=[
+    "https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js",
+    "https://unpkg.com/echarts@5.5.0/dist/echarts.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"
+  ];
+  var idx=0;
+  function tryLoad(){
+    if(idx>=urls.length){document.body.innerHTML='<div style="color:#c8882a;padding:40px;text-align:center;font-size:16px;">⚠️ グラフライブラリの読み込みに失敗しました。</div>';return;}
+    var s=document.createElement('script');s.src=urls[idx++];s.onerror=tryLoad;document.head.appendChild(s);
+  }
+  tryLoad();
+})();
+</script>
+<style>
+:root{--ink:#1a1008;--paper:#f5f0e8;--amber:#c8882a;--amber-light:#e8b96a;--amber-pale:#f5e4c0;--smoke:#8a7a6a;--deep:#3a2810;--panel:rgba(255,255,255,0.6);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--paper);color:var(--ink);font-family:'Noto Serif JP',serif;min-height:100vh;overflow-x:hidden;}
+
+/* ===== ヘッダー ===== */
+header{text-align:center;padding:40px 20px 20px;margin:0 auto;max-width:760px;position:relative;}
+header::before,header::after{content:'';display:block;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent);margin:10px auto;width:80%;}
+.subtitle{font-size:.72rem;letter-spacing:.4em;color:var(--deep);text-transform:uppercase;font-weight:700;}
+h1{font-family:'Shippori Mincho',serif;font-size:clamp(1.3rem,5vw,1.8rem);letter-spacing:.12em;color:var(--deep);}
+h1 span{color:var(--amber);}
+
+/* ===== ステップナビ ===== */
+.step-nav{display:flex;justify-content:center;gap:0;margin:20px auto 10px;max-width:600px;padding:0 16px;}
+.step-tab{flex:1;padding:12px 8px;text-align:center;font-size:.78rem;font-weight:700;color:var(--smoke);background:rgba(255,255,255,0.4);border:1.5px solid rgba(200,136,42,.2);cursor:pointer;transition:.25s;letter-spacing:.08em;position:relative;}
+.step-tab:first-child{border-radius:8px 0 0 8px;}
+.step-tab:last-child{border-radius:0 8px 8px 0;}
+.step-tab:not(:first-child){border-left:none;}
+.step-tab.active{background:var(--deep);color:var(--amber-light);border-color:var(--deep);}
+.step-tab .step-num{display:block;font-size:1.1rem;margin-bottom:2px;font-family:'Shippori Mincho',serif;}
+.step-tab .step-label{font-size:.65rem;display:block;}
+
+/* ===== ステップコンテンツ ===== */
+.step-content{display:none;padding:16px;max-width:760px;margin:0 auto;animation:fadeUp .3s ease;}
+.step-content.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===== STEP 1: アロマ記録 ===== */
+.chart-area{display:flex;flex-direction:column;align-items:center;gap:16px;padding-bottom:16px;}
+.chart-box-w{width:100%;max-width:420px;aspect-ratio:1/1;border-radius:12px;background:rgba(58,40,16,0.92);border:1px solid rgba(200,136,42,.3);overflow:hidden;box-shadow:3px 3px 20px rgba(58,40,16,.15);}
+.chart-box-w.large{max-width:700px;width:100%;height:55vh;min-height:350px;aspect-ratio:unset;}
+#radar-chart,#sunburst-chart,#tree-chart{width:100%;height:100%;}
+
+.view-tabs-w{display:flex;gap:8px;justify-content:center;margin-bottom:12px;}
+.view-tab-w{padding:8px 20px;border-radius:20px;background:rgba(58,40,16,0.08);color:var(--smoke);border:1px solid rgba(200,136,42,.25);font-size:.78rem;font-weight:700;cursor:pointer;transition:.25s;font-family:'Noto Serif JP',serif;}
+.view-tab-w.active{background:var(--deep);color:var(--amber-light);border-color:var(--deep);}
+
+/* FAB */
+.fab-area{display:flex;justify-content:center;gap:10px;padding:16px 0;flex-wrap:wrap;}
+.fab-w{padding:12px 28px;border-radius:30px;border:none;font-family:'Noto Serif JP',serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.08em;transition:.2s;box-shadow:2px 2px 12px rgba(58,40,16,.15);}
+.fab-w.primary{background:var(--deep);color:var(--amber-light);}
+.fab-w.secondary{background:rgba(255,255,255,0.7);color:var(--deep);border:1.5px solid var(--amber);}
+.fab-search-w{width:44px;height:44px;border-radius:50%;background:var(--deep);color:var(--amber-light);border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.fab-search-w.active{background:var(--amber);color:#fff;}
+
+/* ===== モーダル（アロマ選択）===== */
+#aroma-modal{position:fixed;inset:0;background:rgba(58,40,16,0.95);backdrop-filter:blur(20px);z-index:1000;display:none;flex-direction:column;}
+#aroma-modal.active{display:flex;}
+.modal-header-w{padding:40px 15px 10px;border-bottom:1px solid rgba(200,136,42,.3);}
+.header-top-w{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.header-btns-w{display:flex;gap:6px;flex-wrap:wrap;}
+.close-btn-w{background:rgba(255,255,255,0.1);color:#f5f0e8;border:1px solid rgba(200,136,42,.4);padding:7px 12px;border-radius:20px;font-size:.7rem;cursor:pointer;font-family:'Noto Serif JP',serif;font-weight:700;transition:.2s;}
+.close-btn-w:hover{background:var(--amber);color:#fff;}
+
+.tabs-w{display:flex;overflow-x:auto;gap:8px;scrollbar-width:none;padding-bottom:8px;}
+.tab-w{padding:7px 14px;border-radius:18px;background:rgba(255,255,255,0.08);color:#999;font-size:.72rem;white-space:nowrap;cursor:pointer;transition:.3s;font-family:'Noto Serif JP',serif;font-weight:700;}
+
+.swipe-wrapper-w{position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.nav-arrow-w{position:absolute;top:6px;width:40px;height:40px;background:rgba(255,255,255,0.1);border-radius:50%;color:#f5f0e8;z-index:60;display:flex;justify-content:center;align-items:center;cursor:pointer;border:1px solid rgba(200,136,42,.3);}
+.arrow-left-w{left:10px;}
+.arrow-right-w{right:10px;}
+.swipe-container-w{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;scroll-behavior:smooth;}
+.swipe-page-w{min-width:100vw;box-sizing:border-box;padding:0 15px 100px;overflow-y:auto;}
+.category-title-w{position:sticky;top:0;z-index:50;background:rgba(58,40,16,0.95);text-align:center;padding:10px 50px;margin-bottom:12px;font-size:1.1rem;font-weight:700;border-bottom:2px solid var(--amber);color:var(--amber-light);font-family:'Shippori Mincho',serif;}
+.grid-w{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.btn-w{position:relative;overflow:hidden;border-radius:10px;background:rgba(245,240,232,0.12);border:1px solid rgba(200,136,42,.2);color:#f5f0e8;min-height:80px;cursor:pointer;}
+.fill-bg-w{position:absolute;bottom:0;width:100%;transition:height .3s;z-index:1;opacity:.6;}
+.btn-content-w{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:5px;text-align:center;}
+.btn-main-w{font-size:13px;font-weight:800;}
+.btn-sub-w{font-size:10px;color:#c5b99a;}
+.tag-sense-w{font-size:8px;background:rgba(0,0,0,.3);padding:2px 5px;border-radius:3px;margin-top:4px;border:1px solid transparent;}
+.expert-view-w{display:none;}
+body.expert-mode .normal-view-w{display:none;}
+body.expert-mode .expert-view-w{display:block;}
+.minus-btn-w{position:absolute;bottom:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-weight:bold;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.3);z-index:3;}
+
+/* 分子パネル */
+#molecule-panel-w{display:none;flex:1;overflow-y:auto;padding:0 15px 100px;}
+
+/* ===== 検索オーバーレイ ===== */
+#search-overlay-w{position:fixed;inset:0;z-index:1050;display:none;flex-direction:column;background:rgba(58,40,16,0.97);backdrop-filter:blur(20px);}
+#search-overlay-w.active{display:flex;}
+#search-bar-row-w{display:flex;align-items:center;gap:10px;padding:48px 15px 12px;border-bottom:1px solid rgba(200,136,42,.3);}
+#aroma-search-w{flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(200,136,42,.4);border-radius:24px;color:#f5f0e8;padding:10px 16px;font-size:14px;outline:none;font-family:'Noto Serif JP',serif;}
+#aroma-search-w:focus{border-color:var(--amber);}
+#aroma-search-w::placeholder{color:rgba(245,240,232,.35);}
+#search-close-btn-w{background:rgba(255,255,255,0.1);border:1px solid rgba(200,136,42,.3);color:#f5f0e8;padding:7px 14px;border-radius:20px;font-size:.7rem;cursor:pointer;}
+#search-results-w{flex:1;overflow-y:auto;padding:12px 15px 100px;}
+#rank-filter-row-w{display:flex;justify-content:center;gap:6px;padding:10px 15px;border-bottom:1px solid rgba(200,136,42,.2);}
+.rank-filter-btn-w{padding:7px 14px;border-radius:18px;background:rgba(255,255,255,0.06);color:#999;border:1px solid rgba(200,136,42,.2);font-size:.75rem;font-weight:700;cursor:pointer;transition:.25s;min-width:40px;font-family:'Noto Serif JP',serif;}
+.rank-filter-btn-w.active{background:var(--amber);color:#fff;border-color:var(--amber);}
+.search-hit-w{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,136,42,.15);margin-bottom:7px;}
+.search-hit-info-w{flex:1;min-width:0;}
+.search-hit-name-w{font-size:13px;font-weight:800;}
+.search-hit-sub-w{font-size:10px;color:#999;margin-top:2px;}
+.search-hit-ctrl-w{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;}
+.search-score-dots-w{display:flex;gap:2px;}
+.search-score-dot-w{width:8px;height:8px;border-radius:50%;border:1px solid rgba(255,255,255,.2);}
+.search-minus-w{width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.search-plus-w{width:28px;height:28px;border-radius:50%;color:#fff;font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.search-empty-w{text-align:center;color:rgba(245,240,232,.3);padding:60px 0;font-size:12px;line-height:2;}
+
+/* ===== STEP 2: データ確認 ===== */
+.data-summary{background:var(--panel);border:1px solid rgba(200,136,42,.2);border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:2px 2px 12px rgba(58,40,16,.06);}
+.data-summary h3{font-family:'Shippori Mincho',serif;font-size:1rem;color:var(--deep);margin-bottom:12px;border-bottom:1px solid rgba(200,136,42,.2);padding-bottom:8px;}
+.data-cat-section{margin-bottom:12px;}
+.data-cat-label{font-size:.78rem;font-weight:700;color:var(--deep);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.data-cat-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--amber),transparent);}
+.data-item-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;font-size:.82rem;}
+.data-item-row:nth-child(even){background:rgba(200,136,42,.05);}
+.data-item-name{font-weight:700;}
+.data-item-score{display:flex;gap:2px;}
+.data-item-dot{width:8px;height:8px;border-radius:50%;border:1px solid rgba(200,136,42,.3);}
+.data-empty{text-align:center;color:var(--smoke);padding:40px 0;font-size:.85rem;}
+
+/* ===== STEP 3: 文章構築（page2aベース） ===== */
+.section-p2{margin:16px 0;background:var(--panel);border:1px solid rgba(200,136,42,.2);border-radius:8px;overflow:hidden;box-shadow:3px 3px 16px rgba(58,40,16,.06);}
+.section-header-p2{display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(135deg,var(--deep),#5a3a18);cursor:pointer;transition:.3s;}
+.section-header-p2:hover{opacity:.9;}
+.section-number-p2{font-family:'Shippori Mincho',serif;font-size:1.6rem;color:var(--amber-light);}
+.section-title-p2{font-size:clamp(.82rem,2.5vw,.95rem);font-weight:700;color:#fff;}
+.section-title-p2 small{display:block;font-size:.68rem;color:#f0d898;margin-top:2px;font-weight:400;}
+.toggle-icon-p2{margin-left:auto;color:var(--amber-light);transition:.3s;}
+.section-body-p2{padding:16px 18px;display:none;}
+.section-hint-p2{font-size:.78rem;color:var(--smoke);margin-bottom:12px;line-height:1.6;}
+.mode-switcher-p2{display:flex;gap:0;margin-bottom:12px;border:1.5px solid rgba(200,136,42,.35);border-radius:8px;overflow:hidden;background:#fff;}
+.mode-btn-p2{flex:1;padding:9px 6px;border:none;background:transparent;font-family:'Noto Serif JP',serif;font-size:.75rem;font-weight:700;color:var(--smoke);cursor:pointer;transition:.25s;text-align:center;border-right:1px solid rgba(200,136,42,.2);}
+.mode-btn-p2:last-child{border-right:none;}
+.mode-btn-p2.active{background:var(--deep);color:var(--amber-light);}
+.mode-label-p2{display:block;font-size:.6rem;font-weight:400;margin-top:2px;opacity:.7;}
+.dropdown-wrap-p2{display:flex;flex-direction:column;gap:8px;}
+.word-select-p2{width:100%;padding:10px 36px 10px 14px;border:1.5px solid rgba(200,136,42,.4);border-radius:8px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8882a' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;font-family:'Noto Serif JP',serif;font-size:.85rem;color:var(--ink);outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;transition:.2s;}
+.word-select-p2:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(200,136,42,.12);}
+.add-word-btn-p2{width:100%;background:var(--amber);color:#fff;border:none;padding:11px 16px;border-radius:8px;font-family:'Noto Serif JP',serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:.2s;}
+.add-word-btn-p2:active{background:var(--deep);}
+.free-wrap-p2{display:flex;gap:8px;align-items:center;margin-top:10px;}
+.free-input-p2{flex:1;padding:9px 14px;border:1.5px dashed rgba(200,136,42,.4);border-radius:8px;background:rgba(255,255,255,.7);font-family:'Noto Serif JP',serif;font-size:.85rem;color:var(--ink);outline:none;transition:.2s;}
+.free-input-p2::placeholder{color:var(--smoke);font-size:.78rem;}
+.free-input-p2:focus{border-color:var(--amber);border-style:solid;background:#fff;}
+.add-free-btn-p2{background:var(--deep);color:var(--amber-light);border:none;padding:10px 14px;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Serif JP',serif;}
+.selected-tags-p2{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+.sel-tag-p2{display:inline-flex;align-items:center;gap:4px;background:var(--amber-pale);border:1px solid rgba(200,136,42,.4);color:var(--deep);padding:5px 10px 5px 12px;border-radius:18px;font-size:.78rem;animation:tagPop .15s ease;}
+.sel-tag-p2.free-tag{background:#fff;border-style:dashed;}
+.sel-tag-remove-p2{background:none;border:none;cursor:pointer;color:var(--smoke);font-size:1rem;line-height:1;padding:0;}
+@keyframes tagPop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* ===== 選択済みアロマ参照パネル（STEP3内） ===== */
+.aroma-ref-panel{background:rgba(200,136,42,.06);border:1px solid rgba(200,136,42,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;}
+.aroma-ref-title{font-size:.75rem;font-weight:700;color:var(--amber);margin-bottom:8px;letter-spacing:.08em;}
+.aroma-ref-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.aroma-ref-tag{font-size:.7rem;padding:3px 8px;border-radius:12px;font-weight:700;}
+
+/* ===== フッター ===== */
+footer{text-align:center;margin-top:40px;padding:20px 16px;border-top:1px solid rgba(200,136,42,.1);font-size:.65rem;color:var(--smoke);letter-spacing:.1em;}
+
+/* ===== グローバル言語切り替え ===== */
+.global-ctrl{position:absolute;top:12px;right:12px;display:flex;gap:4px;}
+.gl-btn{padding:4px 10px;font-size:.65rem;font-weight:700;border:1.5px solid var(--amber);background:#fff;color:var(--amber);border-radius:4px;cursor:pointer;transition:.2s;}
+.gl-btn.active{background:var(--amber);color:#fff;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="global-ctrl">
+    <button class="gl-btn active" onclick="setGlobalLang('ja')">JP</button>
+    <button class="gl-btn" onclick="setGlobalLang('en')">EN</button>
+  </div>
+  <p class="subtitle">Whisky Tasting — Aroma Workflow</p>
+  <h1><span>琥珀の記憶</span>を綴る</h1>
+</header>
+
+<!-- ステップナビ -->
+<div class="step-nav">
+  <div class="step-tab active" data-step="1" onclick="switchStep(1)">
+    <span class="step-num">①</span>記録する<span class="step-label">Record</span>
+  </div>
+  <div class="step-tab" data-step="2" onclick="switchStep(2)">
+    <span class="step-num">②</span>確認する<span class="step-label">Review</span>
+  </div>
+  <div class="step-tab" data-step="3" onclick="switchStep(3)">
+    <span class="step-num">③</span>言語化する<span class="step-label">Describe</span>
+  </div>
+</div>
+
+<!-- ========== STEP 1: 記録する ========== -->
+<div class="step-content active" id="step-1">
+  <div class="fab-area">
+    <button class="fab-search-w" id="search-fab-w">🔍</button>
+    <button class="fab-w primary" id="open-btn-w">ADD AROMAS</button>
+  </div>
+
+  <div class="view-tabs-w">
+    <button class="view-tab-w active" id="tab-profile-w">◉ Profile</button>
+    <button class="view-tab-w" id="tab-volume-w">🔲 Volume</button>
+  </div>
+
+  <div id="view-profile-w" class="chart-area">
+    <div class="chart-box-w"><div id="sunburst-chart"></div></div>
+    <div class="chart-box-w"><div id="radar-chart"></div></div>
+  </div>
+  <div id="view-volume-w" class="chart-area" style="display:none;">
+    <div class="chart-box-w large"><div id="tree-chart"></div></div>
+  </div>
+</div>
+
+<!-- ========== STEP 2: 確認する ========== -->
+<div class="step-content" id="step-2">
+  <div id="data-summary-area"></div>
+</div>
+
+<!-- ========== STEP 3: 言語化する ========== -->
+<div class="step-content" id="step-3">
+  <!-- 選択アロマ参照パネル -->
+  <div class="aroma-ref-panel">
+    <div class="aroma-ref-title">📋 選択中のアロマ</div>
+    <div class="aroma-ref-tags" id="aroma-ref-tags-area"></div>
+  </div>
+
+  <!-- 03: 香り表現 -->
+  <div class="section-p2" id="sec-03">
+    <div class="section-header-p2" onclick="toggleSectionP2(this)">
+      <div class="section-number-p2">03</div>
+      <div class="section-title-p2" id="ui-t03">立ち上がるアロマ<small>Nosing & Bouquet</small></div>
+      <div class="toggle-icon-p2">▼</div>
+    </div>
+    <div class="section-body-p2" style="display:block;">
+      <p class="section-hint-p2" id="ui-sh03">まずはストレートで。次に数滴の加水で「香りの花」が開く瞬間を捉えてください。</p>
+      <div class="mode-switcher-p2" id="mode-sw-03"></div>
+      <div class="dropdown-wrap-p2">
+        <select class="word-select-p2" id="sel-03"></select>
+        <button class="add-word-btn-p2" onclick="addFromSelectP2('sel-03','tags-03')">＋ 追加</button>
+      </div>
+      <div class="free-wrap-p2">
+        <input class="free-input-p2" id="free-03" type="text" placeholder="✏️ 自由入力" onkeydown="if(event.key==='Enter')addFreeP2('free-03','tags-03')">
+        <button class="add-free-btn-p2" onclick="addFreeP2('free-03','tags-03')">追加</button>
+      </div>
+      <div class="selected-tags-p2" id="tags-03"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 検索オーバーレイ ========== -->
+<div id="search-overlay-w">
+  <div id="search-bar-row-w">
+    <input type="search" id="aroma-search-w" placeholder="アロマ名・印象・香調で検索…" autocomplete="off">
+    <button id="search-close-btn-w">✕</button>
+  </div>
+  <div id="rank-filter-row-w">
+    <button class="rank-filter-btn-w active" data-rank="all">ALL</button>
+    <button class="rank-filter-btn-w" data-rank="0">S</button>
+    <button class="rank-filter-btn-w" data-rank="1">A</button>
+    <button class="rank-filter-btn-w" data-rank="2">B</button>
+    <button class="rank-filter-btn-w" data-rank="3">C</button>
+  </div>
+  <div id="search-results-w"></div>
+</div>
+
+<!-- ========== アロマ選択モーダル ========== -->
+<div id="aroma-modal">
+  <div class="modal-header-w">
+    <div class="header-top-w">
+      <h3 style="margin:0;font-size:.95rem;color:#f5f0e8;font-family:'Shippori Mincho',serif;">Aroma Profile</h3>
+      <div class="header-btns-w">
+        <button class="close-btn-w" id="lang-btn-w">JA/EN</button>
+        <button class="close-btn-w" id="mode-btn-w">EXPERT</button>
+        <button class="close-btn-w" id="molecule-btn-w">MOLECULE</button>
+        <button class="close-btn-w" id="close-modal-w">DONE</button>
+      </div>
+    </div>
+    <div class="tabs-w" id="modal-tabs-w"></div>
+  </div>
+  <div id="molecule-panel-w"></div>
+  <div class="swipe-wrapper-w">
+    <div class="nav-arrow-w arrow-left-w" id="prev-btn-w">◀</div>
+    <div class="nav-arrow-w arrow-right-w" id="next-btn-w">▶</div>
+    <div class="swipe-container-w" id="swipe-container-w"></div>
+  </div>
+</div>
+
+<footer>&copy; 2026 amber-lexicon</footer>
+
+<script>
+// ============================================================
+// DATA (from index.html)
+// ============================================================
+const catConfig = {
+  cereal:{jp:"シリアル",en:"Cereal",hex:"#D2B48C"},
+  fruity:{jp:"フルーティー",en:"Fruity",hex:"#f4d03f"},
+  floral:{jp:"フローラル",en:"Floral",hex:"#ff99cc"},
+  woody:{jp:"ウッディ",en:"Woody",hex:"#8B4513"},
+  smoky:{jp:"スモーキー",en:"Smoky",hex:"#708090"},
+  sweet:{jp:"スイート",en:"Sweet",hex:"#f2a154"},
+  winey:{jp:"ワイニー",en:"Winey",hex:"#B22222"},
+  sulfury:{jp:"サルファリー",en:"Sulfury",hex:"#ccff00"}
+};
+
+const flavorData = {
+  "fruity": [
+    { id: "F01", en: "Apricot", jp: "アプリコット", key: "γ-オクタラクトン｜C₈H₁₄O₂｜杏子｜Jammy", rank: 2, role: "main", impression: "フルーティ・甘やか・やわらかい", tone: "フルーティ・フローラル", texture: "シルキー・やわらかい", wa: "エステル系", expert: "核果・ラクトン系" },
+    { id: "F02", en: "Strawberry", jp: "イチゴ", key: "フラネオール｜C₆H₈O₃｜かき氷シロップ｜Strawberries", rank: 0, role: "main", impression: "フルーティ・可愛らしい・明るい", tone: "フルーティ", texture: "軽い・やわらかい", wa: "エステル系", expert: "赤い果実・フラネオール系" },
+    { id: "F03", en: "Orange", jp: "オレンジ", key: "シトラール｜C₁₀H₁₆O｜蜜柑｜Marmalade", rank: 0, role: "main", impression: "フルーティ・爽やか・明るい", tone: "フルーティ・シトラス", texture: "軽い・ジューシー", wa: "エステル系", expert: "柑橘・テルペン系（シトラール/リモネン近縁）" },
+    { id: "F04", en: "Grapefruit", jp: "グレープフルーツ", key: "ヌートカトン｜C₁₅H₂₂O｜苦い果皮｜Bitter Zest", rank: 1, role: "main", impression: "爽やか・ドライ・ほろ苦い", tone: "フルーティ・シトラス", texture: "軽い・ドライ", wa: "エステル系", expert: "柑橘・セスキテルペン系（ヌートカトン）" },
+    { id: "F05", en: "Cherry", jp: "チェリー", key: "ベンズアルデヒド｜C₇H₆O｜さくらんぼ｜Maraschino", rank: 1, role: "main", impression: "フルーティ・甘酸っぱい・華やか", tone: "フルーティ", texture: "やわらかい・ジューシー", wa: "エステル系", expert: "赤い果実/核果・芳香族アルデヒド系" },
+    { id: "F06", en: "Pineapple", jp: "パイナップル", key: "エチルブチレート｜C₆H₁₂O₂｜パイナップル｜Tropical", rank: 1, role: "main", impression: "トロピカル・華やか・甘酸っぱい", tone: "フルーティ・トロピカル", texture: "軽い・ジューシー", wa: "パインアップル様・ エステル系", expert: "トロピカル・エステル系（エチルエステル）" },
+    { id: "F07", en: "Banana", jp: "バナナ", key: "酢酸イソアミル｜C₇H₁₄O₂｜チョコバナナ｜Banana Bread", rank: 0, role: "main", impression: "甘やか・トロピカル・親しみやすい", tone: "フルーティ・トロピカル", texture: "やわらかい・クリーミー", wa: "バナナ様・ エステル系", expert: "トロピカル・酢酸エステル系" },
+    { id: "F08", en: "Mango", jp: "マンゴー", key: "ミルセン｜C₁₀H₁₆｜完熟｜Exotic", rank: 1, role: "main", impression: "トロピカル・濃厚・華やか", tone: "フルーティ・トロピカル", texture: "やわらかい・ややオイリー", wa: "エステル系", expert: "トロピカル・テルペン系（ミルセン）" },
+    { id: "F09", en: "Melon", jp: "メロン", key: "(Z)-6-ノネナール｜C₉H₁₆O｜完熟の網目｜Honeydew", rank: 2, role: "main", impression: "フルーティ・柔らか・みずみずしい", tone: "フルーティ", texture: "シルキー・ジューシー", wa: "エステル系", expert: "青果実/熟果・アルデヒド系" },
+    { id: "F10", en: "Lemon", jp: "レモン", key: "リモネン｜C₁₀H₁₆｜レモン｜Zest", rank: 0, role: "main", impression: "シャープ・爽快", tone: "フルーティ・シトラス", texture: "軽い・ドライ", wa: "エステル系", expert: "柑橘・テルペン系（リモネン）" },
+    { id: "F11", en: "Citrus Peel", jp: "柑橘ピール", key: "シトラスオイル｜C₁₀H₁₆｜柑橘ピール｜Grated Peel", rank: 1, role: "main", impression: "ドライ・ビター・爽やか", tone: "フルーティ・シトラス", texture: "ドライ・オイリー", wa: "アルデヒド", expert: "柑橘果皮油・テルペン系" },
+    { id: "F12", en: "Green Apple", jp: "青リンゴ", key: "ヘキシルアセテート｜C₈H₁₆O₂｜青リンゴ｜Granny Smith", rank: 1, role: "main", impression: "爽やか・シャープ・青い", tone: "フルーティ・グリーン", texture: "軽い・シャープ", wa: "青リンゴ様・ エステル系", expert: "青果実・エステル系（ヘキシルアセテート）" },
+    { id: "F13", en: "Red Apple", jp: "赤リンゴ", key: "エチル-2-メチルブチレート｜C₇H₁₄O₂｜蜜入り｜Juicy", rank: 1, role: "main", impression: "甘やか・フルーティ・ジューシー", tone: "フルーティ", texture: "やわらかい・ジューシー", wa: "エステル系", expert: "熟果実・エステル系" },
+    { id: "F14", en: "Peach", jp: "桃", key: "γ-ウンデカラクトン｜C₁₁H₂₀O₂｜白桃｜Syrup", rank: 1, role: "main", impression: "甘やか・柔らか・華やか", tone: "フルーティ・フローラル", texture: "シルキー・やわらかい", wa: "エステル系", expert: "核果・ラクトン系" },
+    { id: "F15", en: "Pear", jp: "洋梨", key: "エチルデカノエート｜C₁₂H₂₄O₂｜ラ・フランス｜Poached Pear", rank: 1, role: "main", impression: "フルーティ・上品・みずみずしい", tone: "フルーティ", texture: "シルキー・ジューシー", wa: "エステル系", expert: "果実エステル系（長鎖エステル）" },
+    { id: "F16", en: "Acai", jp: "アサイー", key: "シアニジン｜-｜渋みのあるベリー｜Tart Berry", rank: 3, role: "unique", impression: "濃厚・フルーティ・渋い", tone: "フルーティ・ベリー", texture: "やや重い・ドライ", wa: "エステル系", expert: "ベリー様・ポリフェノール/アントシアニン系" },
+    { id: "F17", en: "Guava", jp: "グアバ", key: "カプロン酸エチル｜C8H16O2｜華やかなトロピカル｜Guava", rank: 3, role: "unique", impression: "トロピカル・華やか・南国的", tone: "フルーティ・トロピカル", texture: "やわらかい・ジューシー", wa: "エステル系", expert: "トロピカル・エステル系" },
+    { id: "F18", en: "Pomegranate", jp: "ザクロ", key: "プニカラギン｜-｜赤い果皮の渋み｜Ruby Tart", rank: 2, role: "unique", impression: "甘酸っぱい・ドライ・鮮やか", tone: "フルーティ・ベリー", texture: "ドライ・ジューシー", wa: "エステル系", expert: "赤果実・ポリフェノール（プニカラギン）系" },
+    { id: "F19", en: "Star Fruit", jp: "スターフルーツ", key: "ギ酸エチル｜C3H6O2｜爽やかな酸味｜Carambola", rank: 3, role: "unique", impression: "軽やか・爽やか", tone: "フルーティ・トロピカル", texture: "軽い・シャープ", wa: "エステル系", expert: "トロピカル/青果実・低分子エステル系" },
+    { id: "F20", en: "Dragon Fruit", jp: "ドラゴンフルーツ", key: "ヘキサナール｜C6H12O｜淡い南国の甘み｜Dragon Fruit", rank: 3, role: "unique", impression: "軽やか・トロピカル・やさしい", tone: "フルーティ・トロピカル", texture: "軽い・やわらかい", wa: "エステル系", expert: "淡色果実・グリーンアルデヒド系" },
+    { id: "F21", en: "Lychee", jp: "ライチ", key: "ローズオキサイド｜C10H18O｜高貴な甘美さ｜Litchi", rank: 2, role: "unique", impression: "華やか・甘やか・高貴", tone: "フルーティ・フローラル", texture: "シルキー・みずみずしい", wa: "エステル系", expert: "トロピカル/フローラル・ローズオキサイド系" },
+    { id: "F22", en: "Fig", jp: "いちじく", key: "複合要因（果実エステル・糖感）｜-｜いちじく｜Fig", rank: 2, role: "unique", impression: "熟した・やわらかい", tone: "果実様", texture: "ねっとり・やや柔らかい", wa: "あり", expert: "熟果実・甘香・種感" },
+    { id: "F23", en: "Persimmon", jp: "柿", key: "複合要因（果実エステル・糖感）｜-｜柿｜Persimmon", rank: 2, role: "unique", impression: "和果実・穏やか", tone: "果実様", texture: "なめらか・やや粘性", wa: "あり", expert: "和果実・熟度で青み/甘み変化" },
+    { id: "F24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類果実｜Fruit", rank: 0, role: "unique", impression: "判別保留", tone: "果実様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "cereal": [
+    { id: "G01", en: "Oatmeal", jp: "オートミール", key: "2-アセチルピロリジン｜C₆H₁₁NO｜麦粥｜Porridge", rank: 2, role: "main", impression: "穏やか・香ばしい・マイルド", tone: "グリーン", texture: "やわらかい・温かみ", wa: "穀物様・ シリアル系", expert: "メイラード・穀物香" },
+    { id: "G02", en: "Corn", jp: "トウモロコシ", key: "ジメチルスルフィド｜C₂H₆S｜茹でキビ｜Popcorn", rank: 2, role: "main", impression: "甘やか・軽やか・軽い", tone: "グリーン", texture: "やわらかい", wa: "穀物様・ シリアル系", expert: "含硫黄・コーン臭（DMS系）" },
+    { id: "G03", en: "Toast", jp: "トースト", key: "2-フルフラール｜C₅H₄O₂｜焼目｜Burnt Edge", rank: 1, role: "main", impression: "香ばしい・ドライ", tone: "ウッディ", texture: "ドライ・温かみ", wa: "穀物様・ シリアル系・ アルデヒド", expert: "加熱生成物・フラン系" },
+    { id: "G04", en: "Bread", jp: "パン", key: "5-メチルフルフラール｜C₆H₆O₂｜焼きたて｜Fresh Bake", rank: 2, role: "main", impression: "穏やか・甘やか・やさしい", tone: "グリーン", texture: "ふんわり・温かみ", wa: "穀物様・ シリアル系", expert: "加熱生成物・フラン系" },
+    { id: "G05", en: "Biscuit", jp: "ビスケット", key: "2-アセチルピロリジン｜C₆H₁₁NO｜クッキー｜Cookie", rank: 1, role: "main", impression: "甘やか・香ばしい", tone: "ウッディ", texture: "ドライ", wa: "穀物様・ シリアル系・ バター様", expert: "ロースト穀物・ピロリジン系" },
+    { id: "G06", en: "Popcorn", jp: "ポップコーン", key: "2-アセチル-1-ピロリン｜C₆H₉NO｜ポップコーン｜Movie Theater", rank: 1, role: "main", impression: "甘やか・香ばしい", tone: "スモーキー", texture: "軽い・ドライ", wa: "穀物様・ シリアル系・ バター様", expert: "ロースト穀物・アセチルピロリン系" },
+    { id: "G07", en: "Malt", jp: "モルト", key: "マルトール｜C₆H₆O₃｜麦チョコ｜Horlicks", rank: 1, role: "main", impression: "甘やか・穏やか・重い", tone: "ウッディ", texture: "まろやか・ややオイリー", wa: "穀物様・ シリアル系", expert: "麦芽香・メイラード" },
+    { id: "G08", en: "Rye", jp: "ライ麦", key: "4-ビニルグアイアコール｜C₉H₁₀O₂｜黒パン｜Rye Bread", rank: 2, role: "main", impression: "スパイシー・ドライ", tone: "スパイシー", texture: "ドライ", wa: "穀物様・ シリアル系", expert: "穀物スパイス・フェノール系" },
+    { id: "G09", en: "Sweet Wort", jp: "甘い麦汁", key: "マルトース｜C₁₂H₂₂O₁₁｜仕込み水｜Mashing", rank: 1, role: "main", impression: "甘やか・フルーティ・マイルド", tone: "グリーン", texture: "とろみ・やわらかい", wa: "穀物様・ エステル系", expert: "糖化香・麦汁（Wort）" },
+    { id: "G10", en: "Yeast", jp: "酵母", key: "イソアミルアルコール｜C₅H₁₂O｜パン生地｜Sourdough", rank: 2, role: "main", impression: "ワイルド・重厚・発酵感", tone: "グリーン", texture: "しっとり・やわらかい", wa: "チーズ様・ フェインツ系", expert: "発酵香・酵母由来（Higher Alcohol）" },
+    { id: "G11", en: "Koji", jp: "麹", key: "フェネチルアルコール｜C₈H₁₀O｜生米｜Koji/Rice Malt", rank: 2, role: "main", impression: "甘やか・発酵感・やさしい", tone: "グリーン", texture: "しっとり", wa: "チーズ様・ フェインツ系", expert: "発酵香・麹由来" },
+    { id: "G12", en: "Red Bean Paste", jp: "小豆", key: "ヘキサナール｜C₆H₁₂O｜茹で小豆｜Red Bean", rank: 2, role: "main", impression: "穏やか・甘やか・落ち着いた", tone: "アーシー", texture: "やわらかい", wa: "穀物様", expert: "豆類・穀物様アルデヒド" },
+    { id: "G13", en: "Wheat", jp: "小麦", key: "3-メチルブタナール｜C₅H₁₀O｜小麦粉｜Flour", rank: 2, role: "main", impression: "クリーン・穏やか・ドライ", tone: "グリーン", texture: "パウダリー・ドライ", wa: "穀物様", expert: "穀粉香・穀物様アルデヒド" },
+    { id: "G14", en: "Porridge", jp: "麦粥", key: "シス-3-ヘキセナール｜C₆H₁₀O｜お粥｜Gruel", rank: 2, role: "main", impression: "穏やか・柔らか・やさしい", tone: "グリーン", texture: "やわらかい・ウェット", wa: "穀物様", expert: "青葉様・穀物（グリーンノート）" },
+    { id: "G15", en: "Unripe Grain", jp: "未熟穀物", key: "未熟穀物成分｜C₆H₁₂O｜若麦｜Green Malt", rank: 3, role: "main", impression: "青っぽい・ドライ", tone: "グリーン", texture: "軽い・ドライ", wa: "穀物様", expert: "青香・未熟穀物ノート" },
+    { id: "G16", en: "Kinako", jp: "きな粉", key: "ピラジン類｜-｜焙煎した豆粉｜Roasted Soy", rank: 2, role: "unique", impression: "香ばしい・甘やか", tone: "アーシー", texture: "パウダリー・ドライ", wa: "穀物様・ ナッツ様", expert: "焙煎豆香・ピラジン系" },
+    { id: "G17", en: "Cookie Dough", jp: "クッキー生地", key: "ジアセチル｜C4H6O2｜焼く前のバター｜Raw Dough", rank: 1, role: "unique", impression: "甘やか・バター感・ミルキー", tone: "スイート", texture: "やわらかい・ややオイリー", wa: "穀物様・ バター様", expert: "乳脂・バター様（ジアセチル）" },
+    { id: "G18", en: "Nukadoko (Fermented Rice Bran Bed)", jp: "ぬか床", key: "乳酸｜C3H6O3｜発酵した穀物｜Fermented Bran", rank: 3, role: "unique", impression: "ワイルド・発酵感・酸っぱい", tone: "アーシー", texture: "ウェット", wa: "チーズ様・酢酸様", expert: "発酵酸・乳酸菌由来" },
+    { id: "G19", en: "Soba Flour", jp: "蕎麦粉", key: "サリチル酸メチル｜-｜香ばしい和の粉感｜Buckwheat", rank: 3, role: "unique", impression: "土っぽい・ドライ・香ばしい", tone: "アーシー", texture: "パウダリー・ドライ", wa: "穀物様", expert: "和穀物・粉香" },
+    { id: "G20", en: "Genmaicha", jp: "玄米茶", key: "2-アセチルピロリン｜C6H9NO｜炒り米の芳香｜Roasted Rice", rank: 2, role: "unique", impression: "香ばしい・穏やか・落ち着いた", tone: "ウッディ", texture: "ドライ・温かみ", wa: "穀物様", expert: "焙煎米香・アセチルピロリン系" },
+    { id: "G21", en: "Draff", jp: "大麦の搾りかす", key: "脂肪酸｜-｜蒸留所の香り｜Spent Grain", rank: 3, role: "unique", impression: "ワイルド・ドライ・発酵感", tone: "アーシー", texture: "ウェット・ややオイリー", wa: "穀物様・ フェインツ系", expert: "蒸留所発酵残渣・穀物残渣臭" },
+    { id: "G22", en: "Rice Bran", jp: "米ぬか", key: "複合要因（脂質・穀皮由来）｜-｜ぬか感｜Rice Bran", rank: 3, role: "unique", impression: "素朴・穀物的", tone: "穀物様", texture: "粉っぽい・ややドライ", wa: "あり", expert: "穀皮・脂質感・粉感" },
+    { id: "G23", en: "Roasted Barley", jp: "炒り麦", key: "ピラジン類（焙煎由来）｜-｜炒り麦｜Roasted Grain", rank: 2, role: "unique", impression: "香ばしい・温かい", tone: "穀物様・焙煎", texture: "ドライ・香ばしい", wa: "あり", expert: "焙煎穀物・麦茶方向" },
+    { id: "G24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類穀物｜Grain", rank: 0, role: "unique", impression: "判別保留", tone: "穀物様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "floral": [
+    { id: "L01", en: "Elderflower", jp: "エルダーフラワー", key: "ホットリエノール｜C₁₀H₁₆O｜エルダーフラワー｜Syrupy", rank: 3, role: "main", impression: "華やか・軽やか・甘い", tone: "フローラル・フルーティ", texture: "やわらかい・シルキー", wa: "エステル系", expert: "白花系・テルペン/モノテルペン系" },
+    { id: "L02", en: "Orange Blossom", jp: "オレンジブロッサム", key: "ネロール｜C₁₀H₁₈O｜柑橘花｜Neroli", rank: 2, role: "main", impression: "華やか・甘やか・明るい", tone: "フローラル・フルーティ", texture: "軽い・シルキー", wa: "エステル系", expert: "白花系・ネロール系（モノテルペン）" },
+    { id: "L03", en: "Chamomile", jp: "カモミール", key: "α-ビサボロール｜C₁₅H₂₆O｜花茶｜Herbal Tea", rank: 2, role: "main", impression: "穏やか・ハーバル・やさしい", tone: "フローラル・ハーバル", texture: "やわらかい・温かみ", wa: "エステル系", expert: "ハーブ花香・セスキテルペンアルコール系" },
+    { id: "L04", en: "Jasmine", jp: "ジャスミン", key: "インドール｜C₈H₇N｜茉莉花｜Heady Floral", rank: 1, role: "main", impression: "華やか・甘美・官能的", tone: "フローラル", texture: "シルキー・ややオイリー", wa: "エステル系", expert: "白花系・インドール系" },
+    { id: "L05", en: "Violet", jp: "スミレ", key: "β-イオノン｜C₁₃H₂₀O｜スミレ｜Face Powder", rank: 2, role: "main", impression: "可憐・華やか・上品", tone: "フローラル・パウダリー", texture: "シルキー・パウダリー", wa: "エステル系", expert: "イオノン系（ノリスプレノイド）" },
+    { id: "L06", en: "Geranium", jp: "ゼラニウム", key: "ゲラニオール｜C₁₀H₁₈O｜葉花｜Rosemary-like", rank: 2, role: "main", impression: "ハーバル・シャープ・青い", tone: "フローラル・グリーン", texture: "軽い・ドライ", wa: "エステル系", expert: "グリーンフローラル・モノテルペンアルコール系" },
+    { id: "L07", en: "Honeysuckle", jp: "ハニーサックル", key: "ベンジルアセテート｜C₉H₁₀O₂｜ハニーサックル｜Nectar", rank: 2, role: "main", impression: "甘やか・華やか・やわらかい", tone: "フローラル・フルーティ", texture: "シルキー・やわらかい", wa: "エステル系", expert: "蜜様フローラル・ベンジルエステル系" },
+    { id: "L08", en: "Peony", jp: "ピオニー", key: "シトロネロール｜C₁₀H₂₀O｜牡丹｜Full Bloom", rank: 2, role: "main", impression: "華やか・柔らか・丸い", tone: "フローラル", texture: "やわらかい・シルキー", wa: "エステル系", expert: "フローラルアルコール系（シトロネロール系）" },
+    { id: "L09", en: "Mint", jp: "ミント", key: "メントール｜C10H20O｜ミントの葉｜Cooling Herb", rank: 1, role: "main", impression: "クリーン・爽やか・冷涼", tone: "ハーバル・グリーン", texture: "冷涼感・ドライ", wa: "アルデヒド", expert: "メントール系（モノテルペン）" },
+    { id: "L10", en: "Lily", jp: "ユリ", key: "ベンジルアルコール｜C₇H₈O｜清楚な花｜Purity", rank: 2, role: "main", impression: "華やか・重厚・清楚", tone: "フローラル", texture: "軽い・シルキー", wa: "エステル系", expert: "白花系・ベンジルアルコール系" },
+    { id: "L11", en: "Lilac", jp: "ライラック", key: "リラール｜C₁₃H₂₂O₂｜春の花｜Soap-like", rank: 2, role: "main", impression: "華やか・軽やか・石鹸様", tone: "フローラル", texture: "シルキー・パウダリー", wa: "エステル系", expert: "フローラルアルデヒド/リラール系" },
+    { id: "L12", en: "Lavender", jp: "ラベンダー", key: "リナロール｜C₁₀H₁₈O｜ポプリ｜Relaxation", rank: 1, role: "main", impression: "ハーバル・穏やか・清涼", tone: "フローラル・ハーバル", texture: "シルキー・冷涼感", wa: "エステル系", expert: "モノテルペンアルコール系（リナロール）" },
+    { id: "L13", en: "Rose", jp: "ローズ", key: "フェニルエタノール｜C₈H₁₀O｜薔薇｜Turkish Delight", rank: 1, role: "main", impression: "華やか・優雅・上品", tone: "フローラル", texture: "シルキー・やわらかい", wa: "エステル系", expert: "ローズアルコール系（フェニルエタノール）" },
+    { id: "L14", en: "Osmanthus", jp: "金木犀", key: "γ-デカラクトン｜C₁₀H₁₈O₂｜金木犀｜Apricot-like", rank: 0, role: "main", impression: "甘やか・華やか", tone: "フローラル・フルーティ", texture: "やわらかい・シルキー", wa: "エステル系", expert: "ラクトン/イオノン近縁・果実様花香" },
+    { id: "L15", en: "Daphne", jp: "沈丁花", key: "アニスアルデヒド｜C₈H₈O₂｜沈丁花｜Daphne", rank: 2, role: "main", impression: "華やか・甘美・凛とした", tone: "フローラル", texture: "シルキー", wa: "エステル系", expert: "アニス様芳香族アルデヒド系" },
+    { id: "L16", en: "Gardenia", jp: "クチナシ", key: "酢酸リナリル｜C12H20O2｜甘く濃厚な白花｜Gardenia", rank: 3, role: "unique", impression: "濃厚・華やか・甘い", tone: "フローラル", texture: "やわらかい・ややオイリー", wa: "エステル系", expert: "白花系エステル（酢酸リナリル系）" },
+    { id: "L17", en: "Cosmos", jp: "コスモス", key: "ゲルマクレンD｜C15H24｜秋の野原の香り｜Autumn Field", rank: 3, role: "unique", impression: "軽やか・優しい・淡い", tone: "フローラル・グリーン", texture: "軽い・ドライ", wa: "エステル系", expert: "青葉/花様セスキテルペン系" },
+    { id: "L18", en: "Marigold", jp: "マリーゴールド", key: "タゲトン｜C10H14O｜独特のキク科の香｜Tagetes", rank: 3, role: "unique", impression: "ハーバル・ややスパイシー・刺激的", tone: "フローラル・グリーン", texture: "ドライ", wa: "エステル系", expert: "キク科フローラル・ケトン系（タゲトン）" },
+    { id: "L19", en: "Rosemary", jp: "ローズマリー", key: "1,8-シネオール｜C10H18O｜ハーブの枝｜Fresh Herbal", rank: 1, role: "unique", impression: "ハーバル・シャープ・清涼", tone: "ハーバル・グリーン", texture: "ドライ・冷涼感", wa: "アルデヒド", expert: "シネオール系（モノテルペンオキシド）" },
+    { id: "L20", en: "Nasturtium", jp: "金蓮花", key: "ベンジルイソチオシアネート｜C8H7NS｜刺激的な花｜Peppery Flower", rank: 3, role: "unique", impression: "スパイシー・華やか・青い", tone: "フローラル・スパイシー", texture: "ドライ", wa: "エステル系", expert: "含硫黄/イソチオシアネート系" },
+    { id: "L21", en: "Queen of Night", jp: "月下美人", key: "サリチル酸メチル｜C8H8O3｜幻想的な芳香｜Midnight Bloom", rank: 3, role: "unique", impression: "濃厚・華やか・幻想的", tone: "フローラル", texture: "シルキー・ややオイリー", wa: "エステル系", expert: "芳香族エステル/サリチル酸メチル系" },
+    { id: "L22", en: "Cherry Blossom", jp: "桜", key: "ベンズアルデヒド（連想成分の一例）｜C7H6O｜桜花｜Cherry Blossom", rank: 2, role: "unique", impression: "上品・やわらかい", tone: "花様", texture: "軽やか・繊細", wa: "あり", expert: "花弁感・淡い芳香" },
+    { id: "L23", en: "Plum Blossom", jp: "梅の花", key: "ベンズアルデヒド（花香連想の一例）｜C7H6O｜梅花｜Plum Blossom", rank: 2, role: "unique", impression: "清楚・やや甘い", tone: "花様", texture: "軽い・澄んだ", wa: "あり", expert: "和花香・青さを伴う場合あり" },
+    { id: "L24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類花香｜Floral", rank: 0, role: "unique", impression: "判別保留", tone: "花様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "smoky": [
+    { id: "P01", en: "Smoke", jp: "スモーク", key: "燃焼揮発物｜C₁₆H₁₀｜薫製｜BBQ Smoke", rank: 0, role: "main", impression: "スモーキー・重厚・力強い", tone: "スモーキー", texture: "ドライ・温かみ", wa: "フェノール系", expert: "燃焼由来揮発物・フェノール系" },
+    { id: "P02", en: "Tar", jp: "タール", key: "クレオソート｜C₇H₈O₂｜舗装路｜Asphalt", rank: 0, role: "main", impression: "重厚・ワイルド・濃厚", tone: "スモーキー・バルサミック", texture: "粘性・オイリー", wa: "フェノール系", expert: "フェノール縮合/クレオソート系" },
+    { id: "P03", en: "Barbecue", jp: "バーベキュー", key: "シリンガール｜C₈H₁₀O₃｜網焼きの煙｜Backyard BBQ", rank: 1, role: "main", impression: "スモーキー・肉感・香ばしい", tone: "スモーキー・スパイシー", texture: "温かみ・ややオイリー", wa: "フェノール系・ ミーティ(肉系)", expert: "燻煙香・フェノール/シリンガール系" },
+    { id: "P04", en: "Peat Smoke", jp: "ピートスモーク", key: "フェノール｜C₆H₆O｜泥炭｜Bog", rank: 0, role: "main", impression: "スモーキー・重厚・個性的", tone: "スモーキー・アーシー", texture: "ドライ・重い", wa: "フェノール系", expert: "ピート由来フェノール系" },
+    { id: "P05", en: "Medicinal", jp: "メディシナル", key: "クレゾール｜C₇H₈O｜正露丸｜First-aid", rank: 0, role: "main", impression: "薬品的・シャープ・刺激的", tone: "スモーキー・バルサミック", texture: "ドライ", wa: "フェノール系", expert: "薬品様フェノール（クレゾール）系" },
+    { id: "P06", en: "Iodine", jp: "ヨード", key: "ヨードフェノール｜C₆H₅IO｜海薬｜Seaweed Medicine", rank: 0, role: "main", impression: "薬品的・海風・鋭い", tone: "スモーキー・バルサミック", texture: "ドライ・冷涼感", wa: "フェノール系", expert: "ヨードフェノール/ヨウ素様ノート" },
+    { id: "P07", en: "Seaweed", jp: "海藻", key: "ジメチルスルフィド｜C₂H₆S｜海藻｜Kelp", rank: 2, role: "main", impression: "海風・ミネラル・塩気", tone: "スモーキー・アーシー", texture: "ウェット", wa: "フェノール系", expert: "海洋ノート・含硫黄（DMS）系" },
+    { id: "P08", en: "Ash", jp: "灰", key: "4-メチルグアイアコール｜C₈H₁₀O₂｜灰皿｜Cold Ash", rank: 2, role: "main", impression: "ドライ・スモーキー・乾いた", tone: "スモーキー", texture: "ドライ・パウダリー", wa: "フェノール系", expert: "燻煙残渣・グアイアコール誘導体系" },
+    { id: "P09", en: "Rocky Shore", jp: "岩場", key: "潮風成分｜NaCl｜潮風｜Ocean Spray", rank: 2, role: "main", impression: "ミネラル・ドライ・無機的", tone: "アーシー・バルサミック", texture: "ドライ・ミネラル感", wa: "フェノール系", expert: "海岸ミネラル/塩気ノート" },
+    { id: "P10", en: "Damp Earth", jp: "湿った土", key: "ジオスミン｜C₁₂H₂₂O｜雨上がり｜Petrichor", rank: 2, role: "main", impression: "土っぽい・重厚・深い", tone: "アーシー・スモーキー", texture: "ウェット", wa: "フェノール系", expert: "ジオスミン系（地土臭）" },
+    { id: "P11", en: "Extinguished", jp: "消し炭", key: "炭酸塩｜K₂CO₃｜たき火のあと｜Extinguished", rank: 2, role: "main", impression: "スモーキー・重厚・余韻的", tone: "スモーキー", texture: "ドライ・パウダリー", wa: "フェノール系", expert: "燃焼後残渣・炭酸塩/灰分ノート" },
+    { id: "P12", en: "Disinfectant", jp: "消毒液", key: "ヨウ素揮発物｜I₂｜病院｜TCP", rank: 0, role: "main", impression: "薬品的・シャープ・清潔感", tone: "スモーキー・バルサミック", texture: "ドライ・冷涼感", wa: "フェノール系", expert: "ヨウ素/消毒薬様揮発物" },
+    { id: "P13", en: "Charcoal", jp: "炭", key: "フェノール縮合体｜(C₆H₆O)n｜黒焦げ｜Soot", rank: 2, role: "main", impression: "ドライ・スモーキー・無機的", tone: "スモーキー", texture: "ドライ・重い", wa: "フェノール系", expert: "炭化木材・フェノール縮合体系" },
+    { id: "P14", en: "Bonfire", jp: "焚き火", key: "グアイアコール｜C₇H₈O₂｜薪煙｜Camping", rank: 0, role: "main", impression: "スモーキー・温かみ・力強い", tone: "スモーキー・ウッディ", texture: "ドライ・温かみ", wa: "フェノール系", expert: "薪燃焼由来フェノール（グアイアコール）系" },
+    { id: "P15", en: "Smoked Meat", jp: "燻製肉", key: "4-メチルグアイアコール｜C₈H₁₀O₂｜厚切りベーコン｜Smoked Ham", rank: 0, role: "main", impression: "スモーキー・肉感・旨味", tone: "スモーキー・スパイシー", texture: "ややオイリー・温かみ", wa: "フェノール系・ ミーティ(肉系)", expert: "燻煙肉香・メチルグアイアコール系" },
+    { id: "P16", en: "Gasoline", jp: "ガソリン", key: "芳香族炭化水素｜-｜揮発する燃料｜Industrial Fuel", rank: 0, role: "unique", impression: "溶剤感・ワイルド・揮発的", tone: "スモーキー・バルサミック", texture: "軽い・ドライ", wa: "溶剤系", expert: "芳香族炭化水素系" },
+    { id: "P17", en: "Factory Smoke", jp: "工場の煙", key: "燃焼由来揮発物｜-｜乾いた工業排気｜Industrial Haze", rank: 1, role: "unique", impression: "重厚・ワイルド・工業的", tone: "スモーキー・バルサミック", texture: "ドライ・重い", wa: "フェノール系", expert: "工業燃焼排気・燃焼混合ノート" },
+    { id: "P18", en: "Incense", jp: "線香", key: "安息香酸｜C7H6O2｜煙るお供えの香り｜Spiritual Smoke", rank: 1, role: "unique", impression: "和風・スモーキー・厳か", tone: "スモーキー・ウッディ", texture: "ドライ・シルキー", wa: "フェノール系", expert: "香木/樹脂燃焼・安息香酸系" },
+    { id: "P19", en: "Burning Rubber", jp: "燃えるゴム", key: "ベンゾチアゾール｜C7H5NS｜焦げた摩擦臭｜Burnt Rubber", rank: 0, role: "unique", impression: "ワイルド・重厚・焦げ臭い", tone: "スモーキー・バルサミック", texture: "ドライ・ややオイリー", wa: "フェノール系・ 硫黄系", expert: "ゴム熱分解・含窒素/含硫黄芳香族系" },
+    { id: "P20", en: "Hospital", jp: "病院の待合室", key: "クレゾール｜C7H8O｜清潔な消毒液｜Disinfectant", rank: 3, role: "unique", impression: "薬品的・クリーン・緊張感", tone: "スモーキー・バルサミック", texture: "ドライ・冷涼感", wa: "フェノール系", expert: "メディシナル連想・クレゾール系" },
+    { id: "P21", en: "Leaf Mold", jp: "腐葉土", key: "ゲオスミン｜C12H22O｜湿った深い土｜Deep Earth", rank: 2, role: "unique", impression: "土っぽい・熟成感・深い", tone: "アーシー・スモーキー", texture: "ウェット", wa: "フェノール系", expert: "地土臭・ジオスミン/腐植ノート" },
+    { id: "P22", en: "Mosquito Coil Smoke", jp: "蚊取り線香", key: "燃焼由来複合香（煙・樹脂系）｜-｜蚊取り線香｜Coil Smoke", rank: 1, role: "unique", impression: "家庭的・夏・青い煙", tone: "燻煙様", texture: "薄い煙・やや乾いた", wa: "あり", expert: "線香系スモーク・草木燃焼" },
+    { id: "P23", en: "Irori Hearth Smoke", jp: "囲炉裏", key: "燃焼由来複合香（木煙・炭・灰）｜-｜囲炉裏｜Hearth Smoke", rank: 2, role: "unique", impression: "和の生活臭・落ち着き", tone: "燻煙様", texture: "乾いた煙・灰っぽい", wa: "あり", expert: "木煙・炭火・家屋内スモーク" },
+    { id: "P24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類燻煙｜Smoky", rank: 0, role: "unique", impression: "判別保留", tone: "燻煙様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "sulfury": [
+    { id: "S01", en: "Rubber", jp: "ゴム", key: "チオール類｜C₂H₆S｜タイヤ｜New Tires", rank: 1, role: "main", impression: "溶剤感・重厚・個性的", tone: "バルサミック・スモーキー", texture: "ドライ・ややオイリー", wa: "溶剤系", expert: "含硫黄化合物・チオール系" },
+    { id: "S02", en: "Smoky Taint", jp: "スモークテイント", key: "硫黄酸化物｜SO₂｜焦げ臭｜Sulfury Smoke", rank: 2, role: "main", impression: "スモーキー・上品・不穏", tone: "スモーキー・バルサミック", texture: "ドライ", wa: "フェノール系", expert: "硫黄酸化物・スモーク汚染ノート" },
+    { id: "S03", en: "Chalk", jp: "チョーク", key: "炭酸カルシウム粉塵｜CaCO₃｜チョーク｜Chalky", rank: 3, role: "main", impression: "ドライ・クリーン・無機的", tone: "アーシー", texture: "ドライ・パウダリー", wa: "軟水系", expert: "無機粉体・炭酸塩ノート" },
+    { id: "S04", en: "Garlic", jp: "ニンニク", key: "アリシン｜C₆H₁₀OS₂｜ニンニク｜Roasted Garlic", rank: 0, role: "main", impression: "ワイルド・硫黄感・刺激的", tone: "スパイシー・バルサミック", texture: "ややオイリー", wa: "硫黄系", expert: "含硫黄（アリシン）系" },
+    { id: "S05", en: "Metallic", jp: "メタリック", key: "鉄イオン由来臭｜C₈H₁₄O｜十円玉｜Coins", rank: 3, role: "main", impression: "シャープ・無機質・硬い", tone: "バルサミック", texture: "ドライ・冷涼感", wa: "硫黄系", expert: "金属臭ノート（金属イオン連想）" },
+    { id: "S06", en: "Roast Beef", jp: "ローストビーフ", key: "2-Methyl-3-furanthiol｜C₅H₆OS｜肉汁｜Gravy", rank: 1, role: "main", impression: "肉感・重厚・旨味", tone: "スパイシー・ウッディ", texture: "ややオイリー・重い", wa: "ミーティ(肉系)", expert: "ミーティ香・含硫黄フランチオール系" },
+    { id: "S07", en: "Gunpowder", jp: "火薬", key: "硝酸エステル分解物｜NO₂｜火打ち石｜Flint", rank: 2, role: "main", impression: "硫黄感・シャープ・刺激的", tone: "バルサミック・スモーキー", texture: "ドライ", wa: "硫黄系", expert: "硝煙/窒素酸化物連想ノート" },
+    { id: "S08", en: "Onion", jp: "玉ねぎ", key: "プロパンチオール｜C₃H₈S｜炒め玉ねぎ｜Fried Onion", rank: 1, role: "main", impression: "硫黄感・ワイルド・甘辛い", tone: "スパイシー・バルサミック", texture: "ウェット", wa: "硫黄系", expert: "含硫黄（チオール）系" },
+    { id: "S09", en: "Struck Match", jp: "擦ったマッチ", key: "二酸化硫黄｜SO₂｜花火の煙｜Struck Match", rank: 2, role: "main", impression: "硫黄感・シャープ・乾いた", tone: "バルサミック・スモーキー", texture: "ドライ", wa: "硫黄系", expert: "二酸化硫黄（SO2）/マッチ硫黄ノート" },
+    { id: "S10", en: "Burnt Rubber", jp: "焦げたゴム", key: "イソプレン酸化物｜C₅H₈O｜急ブレーキ｜Skid Marks", rank: 0, role: "main", impression: "ワイルド・重厚・焦げ臭い", tone: "スモーキー・バルサミック", texture: "ドライ・ややオイリー", wa: "硫黄系", expert: "ゴム熱分解・含硫黄/イソプレン酸化物系" },
+    { id: "S11", en: "Wet Stone", jp: "濡れた石", key: "ミネラル揮発物｜O₃｜川原｜Wet Stone", rank: 2, role: "main", impression: "ミネラル・ドライ・無機的", tone: "アーシー・バルサミック", texture: "ウェット・冷涼感", wa: "軟水系", expert: "ミネラル/オゾン連想ノート" },
+    { id: "S12", en: "Sulfur", jp: "硫黄", key: "硫化水素｜H₂S｜温泉地｜Matchstick", rank: 1, role: "main", impression: "硫黄感・シャープ・温泉様", tone: "バルサミック", texture: "ドライ", wa: "硫黄系", expert: "硫化水素（H2S）系" },
+    { id: "S13", en: "Boiled Cabbage", jp: "茹でたキャベツ", key: "ジメチルトリスルフィド｜C₂H₆S₃｜茹でたキャベツ｜Veggie Water", rank: 3, role: "main", impression: "硫黄感・ワイルド・青臭い", tone: "グリーン・バルサミック", texture: "ウェット", wa: "硫黄系", expert: "含硫黄（DMTS）系" },
+    { id: "S14", en: "Boiled Egg", jp: "茹で卵", key: "メチルメルカプタン｜CH₄S｜硫黄泉｜Hot Springs", rank: 2, role: "main", impression: "硫黄感・重厚・まろい", tone: "バルサミック", texture: "ウェット・やわらかい", wa: "硫黄系", expert: "含硫黄（メルカプタン）系" },
+    { id: "S15", en: "Tanned Leather", jp: "鞣し革", key: "硫黄鞣し成分｜H₂S｜硫革｜Saddle", rank: 2, role: "main", impression: "重厚・ドライ・渋い", tone: "ウッディ・バルサミック", texture: "ドライ", wa: "ミーティ(肉系)", expert: "レザー/硫黄鞣し連想ノート" },
+    { id: "S16", en: "Dried Bonito", jp: "かつお節", key: "イノシン酸｜-｜燻した魚の旨味｜Smoked Fish", rank: 1, role: "unique", impression: "旨味・スモーキー・香ばしい", tone: "スモーキー・バルサミック", texture: "ドライ・ややオイリー", wa: "ミーティ(肉系)", expert: "出汁/燻製魚・イノシン酸連想ノート" },
+    { id: "S17", en: "Solvent", jp: "セメダイン", key: "酢酸エチル｜C4H8O2｜強烈な溶剤｜Nail Polish", rank: 0, role: "unique", impression: "溶剤感・シャープ・揮発的", tone: "バルサミック", texture: "軽い・ドライ", wa: "溶剤系", expert: "溶剤系エステル（酢酸エチル）・ソルベンティ" },
+    { id: "S18", en: "Excess Sulfur", jp: "過度な硫黄", key: "ジメチルトリスルフィド｜C2H6S3｜腐った卵の臭い｜Rotten Egg", rank: 0, role: "unique", impression: "硫黄感・ワイルド・不快", tone: "バルサミック", texture: "ドライ", wa: "硫黄系", expert: "過剰硫黄ノート・DMTS系" },
+    { id: "S19", en: "Beef Tallow", jp: "牛脂", key: "ヘキサナール｜C6H12O｜脂っこいコク｜Fatty Beef", rank: 2, role: "unique", impression: "オイリー・重厚・脂っこい", tone: "バルサミック・ウッディ", texture: "オイリー・重い", wa: "ミーティ(肉系)", expert: "脂質/ファッティノート（酸化脂質・アルデヒド）" },
+    { id: "S20", en: "Soy Sauce", jp: "醤油", key: "ソトロン｜C6H8O3｜熟成した塩気｜Savory Soy", rank: 0, role: "unique", impression: "旨味・熟成感", tone: "バルサミック・アーシー", texture: "ややオイリー・ウェット", wa: "酸化様", expert: "発酵調味料・熟成ソトロン系" },
+    { id: "S21", en: "Wet Dog", jp: "濡れた犬", key: "TCA（微量）｜C6H3Cl3O｜動物的な獣臭｜Animalic", rank: 2, role: "unique", impression: "酸臭・ワイルド・動物的", tone: "アーシー・バルサミック", texture: "ウェット", wa: "酸臭", expert: "TCA/動物的オフノート連想" },
+    { id: "S22", en: "Firework Powder", jp: "花火", key: "硫黄系化合物＋燃焼由来複合香｜-｜花火火薬｜Firework Powder", rank: 2, role: "unique", impression: "火薬・金属・焦げ", tone: "硫黄様・火薬様", texture: "乾いた・刺激的", wa: "あり", expert: "火薬感・燃焼後の金属感" },
+    { id: "S23", en: "Onsen Egg", jp: "温泉卵", key: "硫化水素（連想成分）｜H2S｜硫黄卵｜Sulfur Egg", rank: 2, role: "unique", impression: "硫黄・ゆで卵様", tone: "硫黄様", texture: "しっとり・やや重い", wa: "あり", expert: "温泉・卵黄/卵白由来の硫黄感" },
+    { id: "S24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類硫黄｜Sulfury", rank: 0, role: "unique", impression: "判別保留", tone: "硫黄様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "sweet": [
+    { id: "V01", en: "Almond", jp: "アーモンド", key: "ベンズアルデヒド誘導体｜C₇H₆O｜杏仁豆腐｜Amaretto", rank: 1, role: "main", impression: "甘やか・ナッツ感・香ばしい", tone: "スイート・ナッティ", texture: "ドライ・ややオイリー", wa: "ナッツ様", expert: "芳香族アルデヒド（ベンズアルデヒド）系" },
+    { id: "V02", en: "Custard", jp: "カスタード", key: "エチルバニリン｜C₉H₁₀O₃｜プリン｜Crème Brûlée", rank: 2, role: "main", impression: "甘やか・クリーミー・濃厚", tone: "スイート", texture: "シルキー・ややオイリー", wa: "バター様", expert: "バニリン/バニラ系（バニリン誘導体）" },
+    { id: "V03", en: "Caramel", jp: "キャラメル", key: "5-HMF｜C₆H₆O₃｜生キャラメル｜Toffee Apple", rank: 0, role: "main", impression: "甘やか・濃厚・香ばしい", tone: "スイート・バルサミック", texture: "粘性・オイリー", wa: "エステル系", expert: "メイラード/カラメル化（HMF）系" },
+    { id: "V04", en: "Cream", jp: "クリーム", key: "δ-デカラクトン｜C₁₀H₁₈O₂｜生クリーム｜Whipped Cream", rank: 2, role: "main", impression: "柔らか・甘やか・まろい", tone: "スイート", texture: "シルキー・オイリー", wa: "バター様", expert: "乳脂ラクトン（δ-ラクトン）系" },
+    { id: "V05", en: "Chocolate", jp: "チョコレート", key: "ピラジン類｜C₄H₄N₂｜カカオ｜Dark Cocoa", rank: 0, role: "main", impression: "濃厚・甘やか・ビター", tone: "スイート・ウッディ", texture: "ドライ・重い", wa: "ナッツ様", expert: "ロースト香・ピラジン系" },
+    { id: "V06", en: "Toffee", jp: "トフィー", key: "マルトール｜C₆H₆O₃｜鼈甲飴｜Hard Toffee", rank: 1, role: "main", impression: "甘やか・バター感・香ばしい", tone: "スイート", texture: "粘性・オイリー", wa: "バター様", expert: "メイラード香・マルトール系" },
+    { id: "V07", en: "Butter", jp: "バター", key: "2,3-ブタンジオン｜C₄H₆O₂｜有塩バター｜Rich Butter", rank: 1, role: "main", impression: "クリーミー・オイリー・濃厚", tone: "スイート", texture: "オイリー・やわらかい", wa: "バター様", expert: "ジアセチル" },
+    { id: "V08", en: "Butterscotch", jp: "バタースコッチ", key: "ジアセチル｜C₄H₆O₂｜バター飴｜Werther's", rank: 1, role: "main", impression: "甘やか・濃厚", tone: "スイート", texture: "オイリー・粘性", wa: "バター様", expert: "ジアセチル/バターキャンディノート" },
+    { id: "V09", en: "Honey", jp: "ハチミツ", key: "フェニル酢酸｜C₈H₈O₂｜レンゲ蜜｜Manuka Honey", rank: 0, role: "main", impression: "甘やか・華やか", tone: "スイート・フローラル", texture: "粘性・やわらかい", wa: "エステル系", expert: "芳香酸/蜜蝋連想（フェニル酢酸）系" },
+    { id: "V10", en: "Vanilla", jp: "バニラ", key: "バニリン｜C₈H₈O₃｜バニラ｜Custard", rank: 0, role: "main", impression: "甘やか・上品", tone: "スイート", texture: "シルキー・やわらかい", wa: "エステル系", expert: "バニリン系" },
+    { id: "V11", en: "Marzipan", jp: "マジパン", key: "ベンズアルデヒド｜C₇H₆O｜杏仁｜Almond Paste", rank: 2, role: "main", impression: "甘やか・ナッツ感・香ばしい", tone: "スイート・ナッティ", texture: "ドライ・ややオイリー", wa: "ナッツ様", expert: "ベンズアルデヒド系（アーモンド菓子）" },
+    { id: "V12", en: "Maple Syrup", jp: "メープルシロップ", key: "ソトロン｜C₆H₈O₃｜ホットケーキ｜Pancake", rank: 0, role: "main", impression: "甘やか・濃厚・温かい", tone: "スイート・バルサミック", texture: "粘性・温かみ", wa: "エステル系", expert: "ソトロン系（糖蜜/メープル）" },
+    { id: "V13", en: "Molasses", jp: "モラセス", key: "フルフリルアルコール｜C₅H₆O₂｜黒蜜｜Treacle", rank: 1, role: "main", impression: "重厚・熟成感・甘い", tone: "スイート・バルサミック", texture: "粘性・重い", wa: "酸化様", expert: "糖蜜・フルフリルアルコール系" },
+    { id: "V14", en: "Muscovado Sugar", jp: "黒糖", key: "5-HMF｜C₆H₆O₃｜かりんとう｜Molasses", rank: 0, role: "main", impression: "熟成感・甘やか・香ばしい", tone: "スイート・バルサミック", texture: "粘性・重い", wa: "酸化様", expert: "メイラード/糖蜜（HMF）系" },
+    { id: "V15", en: "Brown Sugar", jp: "三温糖", key: "メラノイジン｜(C₁₂H₂₀O₁₀)n｜黒砂糖｜Muscovado", rank: 1, role: "main", impression: "甘やか・穏やか・やさしい", tone: "スイート", texture: "やわらかい・粘性", wa: "酸化様", expert: "メラノイジン（糖蜜/加熱糖）系" },
+    { id: "V16", en: "Cola", jp: "コーラ", key: "複数のスパイス｜-｜スパイシーな炭酸｜Spicy Soda", rank: 1, role: "unique", impression: "スパイシー・甘やか・刺激的", tone: "スパイシー・スイート", texture: "軽い・シュワ感", wa: "アルデヒド", expert: "複合スパイス（香料ブレンド）系" },
+    { id: "V17", en: "Ramune", jp: "ラムネ", key: "酢酸イソアミル｜C7H14O2｜爽やかな清涼感｜Fizzy Candy", rank: 1, role: "unique", impression: "軽やか・爽やか・甘い", tone: "スイート・フルーティ", texture: "軽い・シュワ感", wa: "エステル系", expert: "酢酸エステル（酢酸イソアミル）系" },
+    { id: "V18", en: "Amazake", jp: "甘酒", key: "麹酸｜C6H6O4｜炊いた米の甘み｜Sweet Rice Ale", rank: 2, role: "unique", impression: "発酵感・甘やか・やさしい", tone: "スイート", texture: "やわらかい・ウェット", wa: "チーズ様", expert: "発酵甘味（麹酸/麹由来）系" },
+    { id: "V19", en: "Corn Syrup", jp: "水飴", key: "マルトース｜C12H22O11｜透明感のある甘み｜Simple Syrup", rank: 2, role: "unique", impression: "甘やか・柔らか・透明感", tone: "スイート", texture: "粘性・ウェット", wa: "エステル系", expert: "糖類（マルトース）系" },
+    { id: "V20", en: "Cotton Candy", jp: "綿あめ", key: "エチルマルトール｜C7H8O3｜懐かしい砂糖菓子｜Fairy Floss", rank: 2, role: "unique", impression: "甘やか・軽やか・軽い", tone: "スイート", texture: "軽い・ドライ", wa: "エステル系", expert: "エチルマルトール（砂糖菓子）系" },
+    { id: "V21", en: "Rancid Oil", jp: "油の酸臭", key: "酪酸｜C4H8O2｜古くなった脂質｜Rancid Butter", rank: 3, role: "unique", impression: "酸臭・ワイルド・不快", tone: "バルサミック・アーシー", texture: "オイリー・重い", wa: "酸臭", expert: "酸化脂質・短鎖脂肪酸（酪酸）系" },
+    { id: "V22", en: "Condensed Milk", jp: "練乳", key: "ラクトン類・糖加熱由来複合香｜-｜練乳｜Condensed Milk", rank: 2, role: "unique", impression: "濃厚・ミルキー", tone: "甘味様", texture: "とろり・重め", wa: "あり", expert: "乳甘味・加糖乳方向" },
+    { id: "V23", en: "White Bean Paste", jp: "白あん", key: "複合要因（糖・豆由来）｜-｜白あん｜White Bean Paste", rank: 2, role: "unique", impression: "和菓子・上品な甘さ", tone: "甘味様", texture: "なめらか・しっとり", wa: "あり", expert: "和甘味・豆由来の穏やかさ" },
+    { id: "V24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類甘味｜Sweet", rank: 0, role: "unique", impression: "判別保留", tone: "甘味様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "woody": [
+    { id: "W01", en: "Oak", jp: "オーク", key: "オークラクトン｜C₁₀H₁₈O₂｜新しい家具｜Sawdust", rank: 1, role: "main", impression: "熟成感・重厚・木質的", tone: "ウッディ", texture: "ドライ・やや重い", wa: "ワイン樽系", expert: "オーク由来木香・オークラクトン系" },
+    { id: "W02", en: "Clove", jp: "クローブ", key: "オイゲノール｜C₁₀H₁₂O₂｜歯医者さん｜Mulled Wine", rank: 1, role: "main", impression: "スパイシー・ドライ・温かい", tone: "スパイシー・ウッディ", texture: "ドライ", wa: "アルデヒド", expert: "スパイスフェノール（オイゲノール）系" },
+    { id: "W03", en: "Coffee", jp: "コーヒー", key: "フルフリルチオール｜C₅H₆OS｜焙煎豆｜Roasted Bean", rank: 0, role: "main", impression: "苦味・重厚・ビター", tone: "ウッディ・スイート", texture: "ドライ・重い", wa: "ミーティ(肉系)", expert: "ロースト香・フルフリルチオール/ピラジン系" },
+    { id: "W04", en: "Coconut", jp: "ココナッツ", key: "オークラクトン｜C₁₀H₁₈O₂｜日焼け止め｜Pina Colada", rank: 1, role: "main", impression: "甘やか・トロピカル・南国的", tone: "ウッディ・スイート", texture: "やわらかい・ややオイリー", wa: "エステル系", expert: "オークラクトン（β-メチル-γ-オクタラクトン）系" },
+    { id: "W05", en: "Cedar", jp: "シダー", key: "セドロール｜C₁₅H₂₆O｜鉛筆｜Cigar Box", rank: 2, role: "main", impression: "ドライ・熟成感・上品", tone: "ウッディ", texture: "ドライ", wa: "ワイン樽系", expert: "セスキテルペンアルコール（セドロール）系" },
+    { id: "W06", en: "Cinnamon", jp: "シナモン", key: "シンナムアルデヒド｜C₉H₈O｜八ツ橋｜Apple Pie", rank: 1, role: "main", impression: "スパイシー・甘やか・温かい", tone: "スパイシー・ウッディ", texture: "ドライ・温かみ", wa: "アルデヒド", expert: "芳香族アルデヒド（シンナムアルデヒド）系" },
+    { id: "W07", en: "Tobacco", jp: "タバコ", key: "β-ダマセノン｜C₁₃H₁₈O｜シガー｜Hand-rolled", rank: 1, role: "main", impression: "重厚・ドライ・熟成感", tone: "ウッディ・バルサミック", texture: "ドライ・やや重い", wa: "ワイン樽系", expert: "熟成香・ノリスプレノイド（ダマセノン）系" },
+    { id: "W08", en: "Charred Wood", jp: "チャーウッド", key: "フェノール縮合体｜(C₆H₆O)n｜炭木｜Burned Log", rank: 2, role: "main", impression: "重厚・スモーキー・力強い", tone: "ウッディ・スモーキー", texture: "ドライ・重い", wa: "ワイン樽系", expert: "炭化木材・フェノール縮合体系" },
+    { id: "W09", en: "Toasted Oak", jp: "トーストオーク", key: "バニリン｜C₈H₈O₃｜焼樽｜Fresh Toasting", rank: 2, role: "main", impression: "熟成感・香ばしい・新樽感", tone: "ウッディ・スイート", texture: "ドライ・温かみ", wa: "ワイン樽系", expert: "加熱樽材香・バニリン系" },
+    { id: "W10", en: "Nutmeg", jp: "ナツメグ", key: "ミリスチシン｜C₁₁H₁₂O₃｜ハンバーグ｜Eggnog", rank: 2, role: "main", impression: "スパイシー・温かみ・香ばしい", tone: "スパイシー・ウッディ", texture: "ドライ", wa: "アルデヒド", expert: "スパイス芳香（ミリスチシン）系" },
+    { id: "W11", en: "Leather", jp: "レザー", key: "イソブチルキノリン｜C₁₃H₁₅N｜古本屋｜Old Saddle", rank: 2, role: "main", impression: "重厚・ドライ・渋い", tone: "ウッディ・バルサミック", texture: "ドライ・やや重い", wa: "ミーティ(肉系)", expert: "レザー香・キノリン系" },
+    { id: "W12", en: "Roasted Meat", jp: "ロースト肉", key: "メチオナール｜C₄H₈OS｜肉汁｜Gravy", rank: 1, role: "main", impression: "肉感・重厚・旨味", tone: "ウッディ・スパイシー", texture: "ややオイリー・重い", wa: "ミーティ(肉系)", expert: "ミーティ香・含硫黄アルデヒド（メチオナール）系" },
+    { id: "W13", en: "Kiln-Dried Wood", jp: "乾燥材", key: "乾燥木材成分｜C₁₀H₁₈O₂｜古材｜Antique Barn", rank: 3, role: "main", impression: "ドライ・熟成感・古材感", tone: "ウッディ", texture: "ドライ", wa: "ワイン樽系", expert: "乾燥木材ノート・木材揮発成分系" },
+    { id: "W14", en: "Resin", jp: "樹脂", key: "α-ピネン｜C₁₀H₁₆｜松脂｜Pine Sap", rank: 2, role: "main", impression: "重厚・ワイルド・粘性", tone: "ウッディ・グリーン", texture: "オイリー・ややドライ", wa: "フェノール系", expert: "テルペン（α-ピネン）系" },
+    { id: "W15", en: "Sandalwood", jp: "白檀", key: "サンタロール｜C₁₅H₂₄O｜お香｜Incense", rank: 2, role: "main", impression: "和風・重厚・上品", tone: "ウッディ・バルサミック", texture: "シルキー・ドライ", wa: "フェノール系", expert: "香木香・セスキテルペンアルコール（サンタロール）系" },
+    { id: "W16", en: "Cork", jp: "コルク", key: "246-トリクロロアニソール｜C6H3Cl3O｜打ち抜いた栓｜Cork Stopper", rank: 3, role: "unique", impression: "熟成感・ドライ・紙様", tone: "ウッディ・アーシー", texture: "ドライ", wa: "ワイン樽系", expert: "TCA/コルク由来クロロアニソール系" },
+    { id: "W17", en: "Hinoki", jp: "ヒノキ", key: "ヒノキチオール｜C10H12O2｜和の浴室の香り｜Cypress", rank: 1, role: "unique", impression: "和風・クリーン・落ち着き", tone: "ウッディ・グリーン", texture: "ドライ・シルキー", wa: "ワイン樽系", expert: "和木香・ヒノキチオール系" },
+    { id: "W18", en: "Mahogany", jp: "マホガニー", key: "フムレン｜C15H24｜重厚なアンティーク｜Mahogany", rank: 2, role: "unique", impression: "重厚・熟成感・古家具感", tone: "ウッディ", texture: "ドライ・重い", wa: "ワイン樽系", expert: "木質テルペン（フムレン）系" },
+    { id: "W19", en: "Kyara", jp: "伽羅", key: "セリネン等｜-｜最高級の香木｜Precious Agar", rank: 2, role: "unique", impression: "重厚・神秘的・高貴", tone: "ウッディ・バルサミック", texture: "シルキー・ややオイリー", wa: "フェノール系", expert: "高級香木・沈香樹脂（セスキテルペン）系" },
+    { id: "W20", en: "Wet Cardboard", jp: "濡れた段ボール", key: "TCA｜C6H3Cl3O｜湿ったカビ臭｜Cork Taint", rank: 3, role: "unique", impression: "酸化感・ドライ・オフ感", tone: "アーシー・ウッディ", texture: "ウェット・ドライ", wa: "酸化様", expert: "TCA/カビ臭・コルクテイント系" },
+    { id: "W21", en: "Sumi Ink", jp: "墨汁", key: "ナフタレン｜C10H8｜書道の静謐な香り｜Calligraphy Ink", rank: 3, role: "unique", impression: "重厚・和風・無機的", tone: "ウッディ・バルサミック", texture: "ドライ・シルキー", wa: "フェノール系", expert: "芳香族炭化水素/ナフタレン連想ノート" },
+    { id: "W22", en: "Planed Wood Shavings", jp: "鉋くず", key: "木材由来複合香（テルペン・リグニン分解物）｜-｜木屑｜Wood Shavings", rank: 3, role: "unique", impression: "新しい木材・清潔", tone: "木香様", texture: "乾いた・軽い", wa: "あり", expert: "削りたて木材・木工室方向" },
+    { id: "W23", en: "Old Furniture Wood", jp: "古家具", key: "木材由来複合香＋酸化由来｜-｜古家具｜Old Furniture", rank: 2, role: "unique", impression: "古木・落ち着き", tone: "木香様", texture: "乾いた・やや重い", wa: "あり", expert: "古材・ニス感・経年木香" },
+    { id: "W24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類木香｜Woody", rank: 0, role: "unique", impression: "判別保留", tone: "木香様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }  ],
+  "winey": [
+    { id: "X01", en: "Fig", jp: "イチジク", key: "フィグラクトン｜C₁₀H₁₈O₂｜無花果｜Fig Roll", rank: 2, role: "main", impression: "熟成感・甘やか・熟した", tone: "フルーティ・ワイニー", texture: "やわらかい・やや重い", wa: "ワイン樽系", expert: "ドライ果実/ラクトン系" },
+    { id: "X02", en: "Oloroso", jp: "オロロソ", key: "ソトロン｜C₆H₈O₃｜酸化熟成｜Old Solera", rank: 1, role: "main", impression: "重厚・熟成感", tone: "ワイニー・バルサミック", texture: "重い・ややオイリー", wa: "ワイン樽系", expert: "酸化熟成酒・ソトロン系" },
+    { id: "X03", en: "Walnut", jp: "くるみ", key: "ジャグロン｜C₁₀H₆O₃｜殻｜Nut shells", rank: 2, role: "main", impression: "ナッツ感・熟成感・香ばしい", tone: "ワイニー・ナッティ", texture: "ドライ・ややオイリー", wa: "ナッツ様・ ワイン樽系", expert: "ナッツ/酸化熟成ノート（ジャグロン連想）" },
+    { id: "X04", en: "Sherry", jp: "シェリー", key: "フルフラール｜C₅H₄O₂｜干し柿｜Fruitcake", rank: 0, role: "main", impression: "熟成感・甘やか・華やか", tone: "ワイニー", texture: "やわらかい・やや重い", wa: "ワイン樽系", expert: "酒精強化ワイン・フルフラール系" },
+    { id: "X05", en: "Nut Shell", jp: "ナッツの殻", key: "タンニン酸化物｜C₇H₆O₅｜渋皮｜Nutty Shell", rank: 2, role: "main", impression: "ドライ・熟成感・渋い", tone: "ワイニー・ウッディ", texture: "ドライ", wa: "ナッツ様", expert: "酸化タンニン/殻様ノート" },
+    { id: "X06", en: "Plum", jp: "プラム", key: "γ-ノナラクトン｜C₉H₁₆O₂｜李｜Prune juice", rank: 2, role: "main", impression: "フルーティ・熟成感・濃い", tone: "フルーティ・ワイニー", texture: "やわらかい・ジューシー", wa: "エステル系", expert: "核果/ラクトン系" },
+    { id: "X07", en: "Prune", jp: "プルーン", key: "ベンズアルデヒド酸化体｜C₇H₆O₂｜ドライフルーツ｜Sticky Date", rank: 1, role: "main", impression: "熟成感・甘やか・重い", tone: "フルーティ・ワイニー", texture: "やわらかい・重い", wa: "ワイン樽系", expert: "ドライ果実・酸化果実ノート" },
+    { id: "X08", en: "PX", jp: "ペドロ・ヒメネス", key: "フルフラール｜C₅H₄O₂｜極甘口｜Syrup-like", rank: 1, role: "main", impression: "濃厚・甘美・極甘", tone: "ワイニー・スイート", texture: "粘性・重い", wa: "ワイン樽系", expert: "PXシェリー・糖化/フルフラール系" },
+    { id: "X09", en: "Berry Jam", jp: "ベリージャム", key: "HMF｜C₆H₆O₃｜コンポート｜Preserves", rank: 1, role: "main", impression: "甘やか・フルーティ・濃い", tone: "フルーティ・ワイニー", texture: "粘性・やわらかい", wa: "エステル系", expert: "加熱果実・HMF系" },
+    { id: "X10", en: "Port", jp: "ポート", key: "エチルアセテート｜C₄H₈O₂｜酒精｜Vintage Port", rank: 1, role: "main", impression: "甘やか・熟成感", tone: "ワイニー・スイート", texture: "やわらかい・やや重い", wa: "ワイン樽系", expert: "酒精強化ワイン・エステル/揮発酸エステル系" },
+    { id: "X11", en: "Rancio", jp: "ランシオ", key: "ソトロン｜C₆H₈O₃｜古酒｜Aged Cognac", rank: 3, role: "main", impression: "熟成感・酸化感・複雑", tone: "ワイニー・バルサミック", texture: "重い・ややオイリー", wa: "酸化様", expert: "酸化熟成（Rancio）・ソトロン系" },
+    { id: "X12", en: "Raisin", jp: "レーズン", key: "フルフラール｜C₅H₄O₂｜干し葡萄｜Sun-dried", rank: 0, role: "main", impression: "甘やか・熟成感・凝縮", tone: "フルーティ・ワイニー", texture: "やわらかい・重い", wa: "ワイン樽系", expert: "ドライ果実・フルフラール系" },
+    { id: "X13", en: "Dried Persimmon", jp: "干し柿", key: "フルフラール｜C5H4O2｜熟成した濃厚な甘み｜Mellow Tannic Sweet", rank: 2, role: "main", impression: "甘やか・熟成感・芳醇", tone: "フルーティ・ワインライク", texture: "粘性・ねっとり", wa: "酸化様", expert: "縮合タンニン・カルボニル化合物（加熱/乾燥由来）系" },
+    { id: "X14", en: "Ripe Grape", jp: "熟した葡萄", key: "リナロール酸化体｜C₁₀H₁₈O₂｜醸造所｜Winery", rank: 2, role: "main", impression: "フルーティ・甘やか・熟した", tone: "フルーティ・ワイニー", texture: "やわらかい・ジューシー", wa: "エステル系", expert: "熟果実・テルペン酸化体系" },
+    { id: "X15", en: "Red Wine", jp: "赤ワイン", key: "4-エチルフェノール｜C₈H₁₀O｜葡萄園｜Vineyard", rank: 1, role: "main", impression: "重厚・熟成感・華やか", tone: "ワイニー", texture: "やわらかい・ドライ", wa: "ワイン樽系", expert: "赤ワイン発酵/フェノール系" },
+    { id: "X16", en: "Balsamic", jp: "バルサミコ", key: "酢酸｜C2H4O2｜熟成した芳醇な酸｜Aged Balsamic", rank: 2, role: "unique", impression: "酸味・熟成感・酸っぱい", tone: "ワイニー・バルサミック", texture: "粘性・ややオイリー", wa: "酢酸様", expert: "酢酸発酵/熟成酢ノート" },
+    { id: "X17", en: "Madeira", jp: "マデイラ", key: "ソトロン｜C6H8O3｜焦がしたキャラメル｜Oxidized Wine", rank: 2, role: "unique", impression: "重厚・熟成感・焦がし感", tone: "ワイニー・バルサミック", texture: "やや重い・温かみ", wa: "ワイン樽系", expert: "酸化加熱熟成酒・ソトロン系" },
+    { id: "X18", en: "Botrytis Wine", jp: "貴腐ワイン", key: "フェニル酢酸エチル｜C10H12O2｜蜂蜜様の高貴な甘｜Noble Rot", rank: 1, role: "unique", impression: "甘美・熟成感・高貴", tone: "ワイニー・フローラル", texture: "シルキー・粘性", wa: "ワイン樽系", expert: "貴腐由来芳香・フェニル酢酸エステル系" },
+    { id: "X19", en: "Old Bookshop", jp: "古本屋", key: "リグニン分解物｜C8H8O3｜古書｜Old Library", rank: 3, role: "unique", impression: "熟成感・土っぽい・凝縮", tone: "フルーティ・ワイニー", texture: "やわらかい・重い", wa: "酸化様", expert: "ドライ果実・糖化/酸化果実ノート" },
+    { id: "X20", en: "Shaoxing Wine", jp: "紹興酒", key: "エチルラクテート｜C5H10O3｜独特の酸化熟成感｜Chinese Wine", rank: 1, role: "unique", impression: "発酵感・熟成感・旨味", tone: "ワイニー・バルサミック", texture: "ややオイリー・ウェット", wa: "酢酸様", expert: "酸化発酵酒・エチルラクテート系" },
+    { id: "X21", en: "Wine Vinegar", jp: "赤ワインビネガー", key: "酢酸｜C2H4O2｜鋭いワインの酸｜Red Vinegar", rank: 2, role: "unique", impression: "酸味・ドライ・鋭い", tone: "ワイニー・バルサミック", texture: "ドライ", wa: "酢酸様", expert: "酢酸発酵・揮発酸ノート" },
+    { id: "X22", en: "Vermouth", jp: "ベルモット", key: "複合要因（ワイン＋ハーブ浸漬成分）｜-｜ハーブ酒｜Herbal Wine", rank: 2, role: "unique", impression: "芳香的・薬草感", tone: "酒香様", texture: "やや軽い・液体感", wa: "あり", expert: "加香ワイン・ハーブ酒方向" },
+    { id: "X23", en: "Marsala", jp: "マルサラ", key: "複合要因（酒精強化ワイン由来）｜-｜酒精ワイン｜Fortified Wine", rank: 2, role: "unique", impression: "濃厚・熟成感", tone: "酒香様", texture: "やや粘性・厚み", wa: "あり", expert: "酒精強化ワイン・酸化熟成系" },
+    { id: "X24", en: "Other", jp: "その他（不明）", key: "(Unknown)｜不明｜未分類酒香｜Winey", rank: 0, role: "unique", impression: "判別保留", tone: "酒香様", texture: "不定", wa: "あり", expert: "既存語彙外・判定保留" }
+  ]
+};
+
+let selectedScores = {};
+let radarChart, sunburstChart, treeChart;
+let currentLang = 'ja';
+let currentRankFilter = 'all';
+let isExpertMode = false;
+let showUnique = true;
+window.currentPageIndex = 0;
+
+// ============================================================
+// STEP NAVIGATION
+// ============================================================
+function switchStep(n) {
+  document.querySelectorAll('.step-tab').forEach(t => t.classList.toggle('active', parseInt(t.dataset.step) === n));
+  document.querySelectorAll('.step-content').forEach((c, i) => c.classList.toggle('active', i + 1 === n));
+  if (n === 2) renderDataSummary();
+  if (n === 3) renderAromaRefTags();
+  if (n === 1) { setTimeout(() => { if(radarChart)radarChart.resize(); if(sunburstChart)sunburstChart.resize(); if(treeChart)treeChart.resize(); }, 50); }
+}
+
+// ============================================================
+// GLOBAL LANGUAGE
+// ============================================================
+function setGlobalLang(lang) {
+  currentLang = lang;
+  LANG_P2 = lang;
+  document.querySelectorAll('.gl-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === (lang==='ja'?'JP':'EN')));
+  initUI();
+  updateCharts();
+  refreshAllP2();
+}
+
+// ============================================================
+// STEP 1: AROMA SELECTION (from index.html)
+// ============================================================
+function initUI() {
+  const tabsDiv = document.getElementById('modal-tabs-w');
+  const swipeDiv = document.getElementById('swipe-container-w');
+  const categories = Object.keys(catConfig);
+  tabsDiv.innerHTML = '';
+  swipeDiv.innerHTML = '';
+
+  categories.forEach((catKey, index) => {
+    const color = catConfig[catKey].hex;
+    const isActive = index === window.currentPageIndex;
+    const tab = document.createElement('div');
+    tab.className = `tab-w ${isActive ? 'active' : ''}`;
+    tab.innerText = (currentLang === 'ja') ? catConfig[catKey].jp : catConfig[catKey].en;
+    if (isActive) { tab.style.backgroundColor = color; tab.style.color = '#000'; }
+    tab.onclick = () => { window.currentPageIndex = index; swipeDiv.scrollTo({ left: index * window.innerWidth, behavior: 'smooth' }); initUI(); };
+    tabsDiv.appendChild(tab);
+
+    const page = document.createElement('div');
+    page.className = 'swipe-page-w';
+    page.style.scrollSnapAlign = 'start';
+    const displayTitle = (currentLang === 'ja') ? catConfig[catKey].jp : catConfig[catKey].en;
+    page.innerHTML = `<div class="category-title-w" style="color:${color};border-bottom-color:${color};">${displayTitle}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'grid-w';
+
+    const visibleItems = (flavorData[catKey] || []).filter(item => {
+      const role = (item.role || 'main').toLowerCase();
+      if (showUnique) return true;
+      return role !== 'unique';
+    });
+
+    visibleItems.forEach(item => {
+      const dataId = `${catKey}_${item.en}`;
+      const currentScore = selectedScores[dataId] || 0;
+      const parts = (item.key || '').split('｜');
+      const btn = document.createElement('div');
+      btn.className = 'btn-w';
+      const mainText = (currentLang === 'ja') ? item.jp : item.en;
+      const subText = (currentLang === 'ja') ? item.en : item.jp;
+      btn.innerHTML = `
+        <div class="fill-bg-w" style="height:${(currentScore/5)*100}%;background:${color};"></div>
+        <div class="btn-content-w">
+          <div class="btn-main-w normal-view-w">${mainText}</div>
+          <div class="btn-sub-w normal-view-w">${subText}</div>
+          <div class="btn-main-w expert-view-w">${parts[1]||''}</div>
+          <div class="btn-sub-w expert-view-w">${parts[0]||''}</div>
+          <div class="tag-sense-w" style="border-color:${currentScore>0?'#fff':'transparent'}">${parts[2]||''}</div>
+        </div>
+      `;
+      function refreshBtn(score) {
+        btn.querySelector('.fill-bg-w').style.height = `${(score/5)*100}%`;
+        btn.querySelector('.tag-sense-w').style.borderColor = score > 0 ? '#fff' : 'transparent';
+        minusBtn.style.opacity = score === 0 ? '0.3' : '1';
+        minusBtn.style.pointerEvents = score === 0 ? 'none' : 'auto';
+      }
+      btn.onclick = () => { const now = selectedScores[dataId]||0; const next=(now+1)%6; selectedScores[dataId]=next; refreshBtn(next); updateCharts(); if(document.getElementById('molecule-panel-w').style.display!=='none') renderMoleculePanel(); };
+      const minusBtn = document.createElement('div');
+      minusBtn.className = 'minus-btn-w';
+      minusBtn.innerText = '−';
+      if(currentScore===0){minusBtn.style.opacity='0.3';minusBtn.style.pointerEvents='none';}
+      minusBtn.onclick = (e) => { e.stopPropagation(); const now=selectedScores[dataId]||0; const next=now===0?0:now-1; selectedScores[dataId]=next; refreshBtn(next); updateCharts(); if(document.getElementById('molecule-panel-w').style.display!=='none') renderMoleculePanel(); };
+      btn.appendChild(minusBtn);
+      btn.oncontextmenu = (e) => { e.preventDefault(); const now=selectedScores[dataId]||0; const next=now===0?5:now-1; selectedScores[dataId]=next; refreshBtn(next); updateCharts(); if(document.getElementById('molecule-panel-w').style.display!=='none') renderMoleculePanel(); };
+      grid.appendChild(btn);
+    });
+    page.appendChild(grid);
+    swipeDiv.appendChild(page);
+  });
+
+  swipeDiv.onscroll = () => {
+    const idx = Math.round(swipeDiv.scrollLeft / window.innerWidth);
+    if (window.currentPageIndex !== idx) { window.currentPageIndex = idx; initUI(); }
+  };
+}
+
+// --- Charts ---
+function updateCharts() {
+  if(!radarChart) return;
+  const radarValues = [];
+  const indicator = [];
+  const hierarchicalData = [];
+  let totalSum = 0;
+  Object.keys(catConfig).forEach(cat => {
+    let catTotal = 0; let children = [];
+    const visibleItems = (flavorData[cat]||[]).filter(item => { const role=(item.role||'main').toLowerCase(); if(showUnique)return true; return role!=='unique'; });
+    visibleItems.forEach(item => {
+      const score = selectedScores[cat+"_"+item.en]||0;
+      if(score>0){ catTotal+=score; totalSum+=score;
+        let displayName = (currentLang==='ja'?item.jp:item.en);
+        if(isExpertMode){const parts=item.key.split('｜');displayName=parts[1]+'\n('+displayName+')';}
+        children.push({name:displayName,value:score,itemStyle:{color:catConfig[cat].hex}});
+      }
+    });
+    const catName=(currentLang==='ja'?catConfig[cat].jp:catConfig[cat].en);
+    indicator.push({name:catName,max:30,color:catConfig[cat].hex});
+    radarValues.push(catTotal);
+    if(children.length>0) hierarchicalData.push({name:catName,itemStyle:{color:catConfig[cat].hex},children:children});
+  });
+  const emptyText = totalSum===0?'「ADD AROMAS」でアロマを選ぶとグラフが表示されます':'';
+  radarChart.setOption({
+    radar:{indicator,radius:'60%',center:['50%','50%'],axisName:{padding:[5,10],fontSize:11,fontWeight:'bold'},splitNumber:4,splitArea:{show:true,areaStyle:{color:['rgba(80,75,70,0.5)','rgba(60,55,50,0.5)']}},splitLine:{lineStyle:{color:'rgba(255,255,255,0.2)'}},axisLine:{lineStyle:{color:'rgba(255,255,255,0.2)'}}},
+    series:[{type:'radar',data:[{value:radarValues,lineStyle:{width:2.5,color:'#c5a880'},itemStyle:{color:'#c5a880'},areaStyle:{opacity:Math.min(0.15+totalSum*0.02,0.8),color:'#c5a880'}}]}],
+    backgroundColor:'transparent',
+    graphic:emptyText?[{type:'text',left:'center',top:'center',style:{text:emptyText,fill:'rgba(233,236,241,0.35)',fontSize:12,textAlign:'center'}}]:[]
+  });
+  sunburstChart.setOption({
+    series:[{type:'sunburst',data:hierarchicalData,radius:['15%','90%'],itemStyle:{borderRadius:4,borderWidth:2,borderColor:'rgba(58,40,16,0.92)'},label:{show:true,rotate:'radial',fontSize:10,color:'#000',fontWeight:'bold'}}],
+    backgroundColor:'transparent',
+    graphic:emptyText?[{type:'text',left:'center',top:'center',style:{text:emptyText,fill:'rgba(233,236,241,0.35)',fontSize:12,textAlign:'center'}}]:[]
+  });
+  treeChart.setOption({
+    series:[{type:'treemap',data:hierarchicalData,nodeClick:false,roam:false,breadcrumb:{show:false},itemStyle:{borderColor:'rgba(58,40,16,0.92)',borderWidth:1,gapWidth:1},upperLabel:{show:true,height:18,color:'#fff',fontWeight:'bold',fontSize:10,backgroundColor:'rgba(0,0,0,0.4)'},label:{show:true,fontWeight:'bold',color:'#000',fontSize:11}}]
+  });
+}
+
+// --- View toggle ---
+document.getElementById('tab-profile-w').onclick = () => { document.getElementById('tab-profile-w').classList.add('active'); document.getElementById('tab-volume-w').classList.remove('active'); document.getElementById('view-profile-w').style.display=''; document.getElementById('view-volume-w').style.display='none'; setTimeout(()=>{radarChart.resize();sunburstChart.resize();},10); };
+document.getElementById('tab-volume-w').onclick = () => { document.getElementById('tab-volume-w').classList.add('active'); document.getElementById('tab-profile-w').classList.remove('active'); document.getElementById('view-volume-w').style.display=''; document.getElementById('view-profile-w').style.display='none'; setTimeout(()=>{treeChart.resize();},10); };
+
+// --- Search ---
+function renderSearchResults(query) {
+  const container = document.getElementById('search-results-w');
+  container.innerHTML = '';
+  const q = query.trim().toLowerCase();
+  if(!q && currentRankFilter==='all'){container.innerHTML='<div class="search-empty-w">🔍<br>アロマ名を入力してください</div>';return;}
+  function toHira(str){return str.replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));}
+  function toKata(str){return str.replace(/[\u3041-\u3096]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));}
+  function matches(text,q){const t=text.toLowerCase();return t.includes(q)||toHira(t).includes(q)||toKata(t).includes(toKata(q));}
+  const hits=[];
+  Object.keys(catConfig).forEach(catKey=>{
+    (flavorData[catKey]||[]).forEach(item=>{
+      if(!showUnique&&(item.role||'main').toLowerCase()==='unique')return;
+      if(currentRankFilter!=='all'&&String(item.rank)!==currentRankFilter)return;
+      if(q){if(matches(item.jp,q)||matches(item.en,q)||matches(item.key||'',q)||matches(item.impression||'',q)||matches(item.tone||'',q)||matches(item.texture||'',q)||matches(item.wa||'',q)||matches(item.expert||'',q)){hits.push({catKey,item});}}else{hits.push({catKey,item});}
+    });
+  });
+  if(hits.length===0){container.innerHTML='<div class="search-empty-w">該当なし</div>';return;}
+  hits.forEach(({catKey,item})=>{
+    const color=catConfig[catKey].hex;const dataId=`${catKey}_${item.en}`;
+    const mainText=currentLang==='ja'?item.jp:item.en;const subText=currentLang==='ja'?item.en:item.jp;
+    const catLabel=currentLang==='ja'?catConfig[catKey].jp:catConfig[catKey].en;
+    const row=document.createElement('div');row.className='search-hit-w';
+    const infoDiv=document.createElement('div');infoDiv.className='search-hit-info-w';
+    infoDiv.innerHTML=`<div class="search-hit-name-w" style="color:${color}">${mainText}</div><div class="search-hit-sub-w">${subText} · <span style="color:${color}">${catLabel}</span></div>`;
+    const ctrl=document.createElement('div');ctrl.className='search-hit-ctrl-w';
+    const dots=document.createElement('div');dots.className='search-score-dots-w';
+    function renderDots(s){dots.innerHTML='';for(let i=0;i<5;i++){const d=document.createElement('div');d.className='search-score-dot-w';d.style.background=i<s?color:'transparent';dots.appendChild(d);}}
+    renderDots(selectedScores[dataId]||0);
+    const minusBtn=document.createElement('div');minusBtn.className='search-minus-w';minusBtn.textContent='−';
+    const plusBtn=document.createElement('div');plusBtn.className='search-plus-w';plusBtn.textContent='+';plusBtn.style.background=color;
+    function updateScore(next){selectedScores[dataId]=next;renderDots(next);minusBtn.style.opacity=next===0?'0.3':'1';minusBtn.style.pointerEvents=next===0?'none':'auto';updateCharts();}
+    const cur=selectedScores[dataId]||0;minusBtn.style.opacity=cur===0?'0.3':'1';minusBtn.style.pointerEvents=cur===0?'none':'auto';
+    plusBtn.onclick=(e)=>{e.stopPropagation();updateScore(((selectedScores[dataId]||0)+1)%6);};
+    minusBtn.onclick=(e)=>{e.stopPropagation();const n=selectedScores[dataId]||0;updateScore(n===0?0:n-1);};
+    ctrl.appendChild(dots);ctrl.appendChild(minusBtn);ctrl.appendChild(plusBtn);
+    row.appendChild(infoDiv);row.appendChild(ctrl);container.appendChild(row);
+  });
+}
+
+document.getElementById('search-fab-w').onclick = () => {
+  const overlay=document.getElementById('search-overlay-w');const isOpen=overlay.classList.contains('active');
+  if(isOpen){overlay.classList.remove('active');document.getElementById('search-fab-w').classList.remove('active');document.getElementById('aroma-search-w').value='';currentRankFilter='all';document.querySelectorAll('.rank-filter-btn-w').forEach(b=>b.classList.remove('active'));document.querySelector('.rank-filter-btn-w[data-rank="all"]').classList.add('active');}
+  else{overlay.classList.add('active');document.getElementById('search-fab-w').classList.add('active');renderSearchResults('');setTimeout(()=>document.getElementById('aroma-search-w').focus(),100);}
+};
+document.getElementById('search-close-btn-w').onclick = () => { document.getElementById('search-overlay-w').classList.remove('active');document.getElementById('search-fab-w').classList.remove('active');document.getElementById('aroma-search-w').value='';currentRankFilter='all';document.querySelectorAll('.rank-filter-btn-w').forEach(b=>b.classList.remove('active'));document.querySelector('.rank-filter-btn-w[data-rank="all"]').classList.add('active'); };
+document.getElementById('aroma-search-w').addEventListener('input',(e)=>{renderSearchResults(e.target.value);});
+document.querySelectorAll('.rank-filter-btn-w').forEach(btn=>{btn.onclick=()=>{document.querySelectorAll('.rank-filter-btn-w').forEach(b=>b.classList.remove('active'));btn.classList.add('active');currentRankFilter=btn.dataset.rank;renderSearchResults(document.getElementById('aroma-search-w').value);};});
+
+// --- Modal events ---
+document.getElementById('prev-btn-w').onclick = () => { const target=(window.currentPageIndex===0)?7:window.currentPageIndex-1; document.getElementById('swipe-container-w').scrollTo({left:target*window.innerWidth,behavior:'smooth'}); };
+document.getElementById('next-btn-w').onclick = () => { const target=(window.currentPageIndex===7)?0:window.currentPageIndex+1; document.getElementById('swipe-container-w').scrollTo({left:target*window.innerWidth,behavior:'smooth'}); };
+document.getElementById('open-btn-w').onclick = () => document.getElementById('aroma-modal').classList.add('active');
+document.getElementById('close-modal-w').onclick = () => { document.getElementById('aroma-modal').classList.remove('active'); updateCharts(); };
+document.getElementById('mode-btn-w').onclick = () => { isExpertMode=!isExpertMode; document.body.classList.toggle('expert-mode',isExpertMode); updateCharts(); };
+document.getElementById('lang-btn-w').onclick = () => { currentLang=(currentLang==='ja'?'en':'ja'); LANG_P2=currentLang; initUI(); updateCharts(); refreshAllP2(); document.querySelectorAll('.gl-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim()===(currentLang==='ja'?'JP':'EN'))); };
+// --- Molecule panel ---
+document.getElementById('molecule-btn-w').onclick = () => {
+  const isMolView=document.getElementById('molecule-panel-w').style.display!=='none';
+  if(isMolView){document.getElementById('molecule-panel-w').style.display='none';document.querySelector('.swipe-wrapper-w').style.display='';document.querySelector('.arrow-left-w').style.display='';document.querySelector('.arrow-right-w').style.display='';document.getElementById('molecule-btn-w').style.background='rgba(255,255,255,0.1)';document.getElementById('molecule-btn-w').style.color='#f5f0e8';}
+  else{document.getElementById('molecule-panel-w').style.display='block';document.querySelector('.swipe-wrapper-w').style.display='none';document.querySelector('.arrow-left-w').style.display='none';document.querySelector('.arrow-right-w').style.display='none';document.getElementById('molecule-btn-w').style.background='#ccff00';document.getElementById('molecule-btn-w').style.color='#000';renderMoleculePanel();}
+};
+
+// Molecule SVG engine
+const subMap={"₀":"0","₁":"1","₂":"2","₃":"3","₄":"4","₅":"5","₆":"6","₇":"7","₈":"8","₉":"9"};
+const MOL_CAT_ANGLE={cereal:0,fruity:30,citrus:60,floral:90,herbal:120,woody:150,smoky:180,spicy:210,sweet:240,winey:270,nutty:300,sulfury:330};
+function normalizeFormula(raw){if(!raw)return"";return raw.trim().replace(/[₀₁₂₃₄₅₆₇₈₉]/g,ch=>subMap[ch]??ch).replace(/\s+/g,"");}
+function hexToRgb(hex){const h=hex.replace("#","");const n=parseInt(h,16);return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
+function rgba(hex,a){const{r,g,b}=hexToRgb(hex);return`rgba(${r},${g},${b},${a})`;}
+function darken(hex,amt=0.22){const{r,g,b}=hexToRgb(hex);return`rgb(${Math.max(0,Math.floor(r*(1-amt)))},${Math.max(0,Math.floor(g*(1-amt)))},${Math.max(0,Math.floor(b*(1-amt)))})`;}
+function parseFormula(raw){const norm=normalizeFormula(raw||"");if(!norm)return{ok:false};let s=norm,polymer=false;const pm=s.match(/^\((.+)\)n$/i);if(pm){polymer=true;s=pm[1];}const re=/([A-Z][a-z]?)(\d*)/g;let m,counts={};while((m=re.exec(s))!==null){const el=m[1],n=m[2]===""?1:Number(m[2]);counts[el]=(counts[el]??0)+n;}const C=counts["C"]??0,O=counts["O"]??0,N=counts["N"]??0,S=counts["S"]??0;return{ok:true,original:raw.trim(),norm:s,polymer,inorganic:(C===0),counts,C,O,N,S};}
+function carbonToVertices(C){if(C<=3)return 3;if(C<=5)return 4;if(C===6)return 5;if(C<=8)return 6;if(C<=10)return 7;if(C<=13)return 8;if(C<=16)return 9;return 10;}
+function polygonPoints(cx,cy,r,n,rotDeg){const pts=[],rot=rotDeg*Math.PI/180;for(let i=0;i<n;i++){const a=rot+i*(2*Math.PI/n);pts.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}return pts;}
+function pickSpikeIdx(pts,cx,cy,targetDeg){let best=Infinity,idx=0;pts.forEach((p,i)=>{const dx=p[0]-cx,dy=p[1]-cy,ang=Math.atan2(dy,dx)*180/Math.PI;let d=Math.abs((((ang-targetDeg)%360)+540)%360-180);if(d<best){best=d;idx=i;}});return idx;}
+function buildMolSVG(formulaRaw,catKey,hex,size=56){const m=parseFormula(formulaRaw);if(!m.ok)return`<svg viewBox="0 0 ${size} ${size}"></svg>`;const cx=size/2,cy=size/2,baseR=size*0.3;const baseAngle=MOL_CAT_ANGLE[catKey]??0;const rotation=(m.inorganic?-45:-90)+baseAngle;const pts=polygonPoints(cx,cy,baseR,m.inorganic?4:carbonToVertices(m.C),rotation);const targetAtan=(catKey==="sulfury")?90:(baseAngle+90)%360;const sIdx=pickSpikeIdx(pts,cx,cy,targetAtan);let spikePath="";if(m.S>0){const v=pts[sIdx],dx=v[0]-cx,dy=v[1]-cy,len=Math.hypot(dx,dy)||1;const ex=v[0]+(dx/len)*8,ey=v[1]+(dy/len)*8;const l=pts[(sIdx-1+pts.length)%pts.length],r2=pts[(sIdx+1)%pts.length];spikePath=`<path d="M ${(v[0]+l[0])/2} ${(v[1]+l[1])/2} L ${ex} ${ey} L ${(v[0]+r2[0])/2} ${(v[1]+r2[1])/2} Z" fill="${rgba(hex,0.1)}" stroke="${darken(hex)}" stroke-width="1.2"/>`;}const rings=m.O<=0?"": `<circle cx="${cx}" cy="${cy}" r="${size*0.13}" fill="none" stroke="${rgba(hex,0.5)}" stroke-width="1.1"/>`+(m.O>1?`<circle cx="${cx}" cy="${cy}" r="${size*0.2}" fill="none" stroke="${rgba(hex,0.3)}" stroke-width="1"/>`:"");return`<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${cx}" cy="${cy}" r="${size*0.36}" fill="${rgba(hex,0.06)}"/>${spikePath}<polygon points="${pts.map(p=>p[0].toFixed(2)+","+p[1].toFixed(2)).join(" ")}" fill="${rgba(hex,0.18)}" stroke="${darken(hex)}" stroke-width="1.5" ${m.polymer?'stroke-dasharray="4 3"':""}/>${rings}${m.N>0?`<circle cx="${cx}" cy="${cy}" r="2.3" fill="${rgba(hex,0.9)}"/>`:""}</svg>`;}
+
+function renderMoleculePanel(){
+  const container=document.getElementById('molecule-panel-w');container.innerHTML='';
+  const categories=Object.keys(catConfig);let hasAny=false;
+  categories.forEach(catKey=>{
+    const visibleItems=(flavorData[catKey]||[]).filter(item=>{const role=(item.role||'main').toLowerCase();if(showUnique)return true;return role!=='unique';});
+    const catItems=visibleItems.map(item=>{const score=selectedScores[catKey+"_"+item.en]||0;return{item,score};}).filter(x=>x.score>0);
+    if(catItems.length===0)return;hasAny=true;
+    const color=catConfig[catKey].hex;const label=currentLang==='ja'?catConfig[catKey].jp:catConfig[catKey].en;
+    const section=document.createElement('div');section.style.cssText='margin-bottom:20px;';
+    section.innerHTML=`<div style="font-size:12px;font-weight:900;letter-spacing:.1em;color:${color};padding:8px 0 6px;border-bottom:1px solid ${rgba(color,0.3)};margin-bottom:10px;">${label.toUpperCase()}</div>`;
+    const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;';
+    catItems.forEach(({item,score})=>{
+      const parts=item.key.split('｜');const formulaRaw=parts[1]||'';const svgStr=buildMolSVG(formulaRaw,catKey,color,56);const mainText=currentLang==='ja'?item.jp:item.en;
+      const card=document.createElement('div');card.style.cssText=`border-radius:12px;border:1px solid ${rgba(color,0.25)};background:rgba(0,0,0,0.3);padding:8px 8px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:border-color 0.2s;`;
+      card.innerHTML=`${svgStr}<div style="font-size:11px;font-weight:800;text-align:center;color:#e9ecf1;">${mainText}</div><div style="font-size:9px;font-family:monospace;color:${rgba(color,0.9)};text-align:center;">${formulaRaw}</div><div style="display:flex;gap:2px;margin-top:2px;">${'⬡'.repeat(score).split('').map(()=>`<span style="font-size:8px;color:${color};">⬡</span>`).join('')}</div>`;
+      card.onmouseenter=()=>card.style.borderColor=color;card.onmouseleave=()=>card.style.borderColor=rgba(color,0.25);
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);container.appendChild(section);
+  });
+  if(!hasAny)container.innerHTML='<div style="text-align:center;color:rgba(245,240,232,0.4);padding:60px 0;font-size:13px;">選択されたアロマがありません</div>';
+}
+
+// ============================================================
+// STEP 2: DATA SUMMARY
+// ============================================================
+function renderDataSummary() {
+  const area = document.getElementById('data-summary-area');
+  area.innerHTML = '';
+  const entries = Object.entries(selectedScores).filter(([k,v]) => v > 0);
+  if (entries.length === 0) { area.innerHTML = '<div class="data-empty">まだアロマが選択されていません。<br>ステップ①で香りを記録してください。</div>'; return; }
+
+  const grouped = {};
+  entries.forEach(([key, score]) => {
+    const [catKey, ...rest] = key.split('_');
+    const en = rest.join('_');
+    if (!grouped[catKey]) grouped[catKey] = [];
+    const item = (flavorData[catKey]||[]).find(i => i.en === en);
+    grouped[catKey].push({ en, score, item });
+  });
+
+  const box = document.createElement('div');
+  box.className = 'data-summary';
+  box.innerHTML = '<h3>📊 選択されたアロマ一覧</h3>';
+
+  Object.keys(catConfig).forEach(catKey => {
+    if (!grouped[catKey] || grouped[catKey].length === 0) return;
+    const color = catConfig[catKey].hex;
+    const catName = currentLang === 'ja' ? catConfig[catKey].jp : catConfig[catKey].en;
+    const sec = document.createElement('div');
+    sec.className = 'data-cat-section';
+    sec.innerHTML = `<div class="data-cat-label" style="color:${color}">${catName}</div>`;
+    grouped[catKey].sort((a,b) => b.score - a.score).forEach(({ en, score, item }) => {
+      const name = item ? (currentLang === 'ja' ? item.jp : item.en) : en;
+      const sub = item ? (currentLang === 'ja' ? item.en : item.jp) : '';
+      const row = document.createElement('div');
+      row.className = 'data-item-row';
+      let dotsHtml = '';
+      for (let i = 0; i < 5; i++) dotsHtml += `<div class="data-item-dot" style="background:${i < score ? color : 'transparent'}"></div>`;
+      row.innerHTML = `<span class="data-item-name">${name} <small style="color:var(--smoke);font-weight:400;">${sub}</small></span><div class="data-item-score">${dotsHtml}</div>`;
+      sec.appendChild(row);
+    });
+    box.appendChild(sec);
+  });
+  area.appendChild(box);
+}
+
+// ============================================================
+// STEP 3: AROMA REF TAGS + page2a FUNCTIONALITY
+// ============================================================
+function renderAromaRefTags() {
+  const area = document.getElementById('aroma-ref-tags-area');
+  area.innerHTML = '';
+  const entries = Object.entries(selectedScores).filter(([k,v]) => v > 0);
+  if (entries.length === 0) { area.innerHTML = '<span style="font-size:.75rem;color:var(--smoke);">ステップ①でアロマを選んでください</span>'; return; }
+  entries.forEach(([key, score]) => {
+    const [catKey, ...rest] = key.split('_');
+    const en = rest.join('_');
+    const color = catConfig[catKey]?.hex || '#888';
+    const item = (flavorData[catKey]||[]).find(i => i.en === en);
+    const name = item ? (currentLang === 'ja' ? item.jp : item.en) : en;
+    const tag = document.createElement('span');
+    tag.className = 'aroma-ref-tag';
+    tag.style.cssText = `background:${color}22;color:${color};border:1px solid ${color}55;`;
+    tag.textContent = `${name} ×${score}`;
+    area.appendChild(tag);
+  });
+}
+
+// --- page2a logic ---
+let LANG_P2 = 'ja';
+const MODE_P2 = {'03':'real'};
+function escP2(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAP2(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+const UI_P2={
+  ja:{t03:'立ち上がるアロマ<small>Nosing & Bouquet</small>',sh03:'まずはストレートで。次に数滴の加水で「香りの花」が開く瞬間を捉えてください。',modes:['🔍 リアル','✨ 情緒','🌙 ポエム'],modeSub:['観察そのまま','おしゃれ感性的','詩的・文学的']},
+  en:{t03:'Aroma<small>Nosing & Bouquet</small>',sh03:'Nose it neat first. Then add a few drops of water to unlock the bouquet.',modes:['🔍 Analytical','✨ Evocative','🌙 Poetic'],modeSub:['Objective note','Sensory & expressive','Literary & atmospheric']}
+};
+
+const D03={ja:{real:[
+{l:'焚き火のようなスモーキーさ',h:'泥炭(ピート)を燃やした際の煙の香り',g:'🔥 スモーク・ピート系'},
+{l:'潮風とヨードの香り',h:'海岸沿いのピートに由来する磯の香り',g:'🔥 スモーク・ピート系'},
+{l:'薬品的なヨード香',h:'消毒薬に似たヨードの香り',g:'🔥 スモーク・ピート系'},
+{l:'背景に淡いスモークの気配',h:'穏やかな燻り香',g:'🔥 スモーク・ピート系'},
+{l:'スモークのヒント',h:'燻製肉や燻製魚を思わせる',g:'🔥 スモーク・ピート系'},
+{l:'バニラと焦がしたオーク',h:'バーボン樽熟成の定番香',g:'🍯 甘・フルーツ系'},
+{l:'焼きたてのアップルパイ',h:'熟したリンゴ・洋梨・シナモン',g:'🍯 甘・フルーツ系'},
+{l:'はちみつがけのアップルタルト',h:'蜂蜜と焼いたリンゴ',g:'🍯 甘・フルーツ系'},
+{l:'熟したレーズン',h:'シェリー樽熟成の甘さと果実感',g:'🍯 甘・フルーツ系'},
+{l:'ビターチョコのほろ苦さ',h:'チョコにドライフルーツの複雑な甘み',g:'🍯 甘・フルーツ系'},
+{l:'ブラックベリーの甘み',h:'熟した黒スグリやブルーベリー',g:'🍯 甘・フルーツ系'},
+{l:'スモーキーなブラックフォレストケーキ',h:'スモーキーさの中に赤いベリー',g:'🍯 甘・フルーツ系'},
+{l:'メープル香るグラノーラ',h:'メープルシロップに穀物の素朴な甘さ',g:'🍯 甘・フルーツ系'},
+{l:'オークとドライフルーツが絡み合う',h:'シェリー樽の甘さとオーク',g:'🍯 甘・フルーツ系'},
+{l:'黒糖シロップのプラムコンポート',h:'黒糖のコクとスパイシーなプラム',g:'🍯 甘・フルーツ系'},
+{l:'ほんのりと花のような甘い香り',h:'ジャスミンや白い花の繊細な香り',g:'🌿 フローラル・穀物系'},
+{l:'青草のようなフレッシュさ',h:'春の野原のフレッシュな草',g:'🌿 フローラル・穀物系'},
+{l:'麦芽の素朴な穀物香',h:'ライ麦や麦芽の素朴な香り',g:'🌿 フローラル・穀物系'},
+{l:'コーンのような甘い穀物香',h:'バーボン樽由来のコーンの甘い穀物香',g:'🌿 フローラル・穀物系'},
+{l:'バニラヨーグルトをのせたシリアル',h:'バニラとヨーグルトに穀物の素朴さ',g:'🌿 フローラル・穀物系'},
+{l:'シナモン香るキャラメル洋梨のタルト',h:'温かいスパイスとキャラメル洋梨',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'エスプレッソとビターチョコのテリーヌ',h:'エスプレッソとチョコのコク',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'ロースト感のあるナッツ香',h:'アーモンド・ヘーゼルナッツ',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'フレッシュなオーク材の香り',h:'新しいオーク樽由来の木材',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'オークのアクセント',h:'長期熟成の革・タバコ・木',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'フルーティーさの痕跡',h:'穏やかなフルーティーさ',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'モルトの面影',h:'モルト本来の麦の甘みや穀物の奥行き',g:'🍵 スパイス・ナッツ・木香系'},
+{l:'かすかに潮のヨード香',h:'白こしょうやジンジャーのスパイス香',g:'🍵 スパイス・ナッツ・木香系'}
+]},
+en:{real:[
+{l:'Fresh orchard fruit on the nose, led by apple and pear.',h:'Classic bourbon-cask fruit character'},
+{l:'Vanilla and honey up front, followed by light oak.',h:'First-fill bourbon cask signature'},
+{l:'Citrus peel, malt sweetness, and a dry woody note.',h:'Balanced nose with cereal and cask elements'},
+{l:'Clear sherry influence with raisin, fig, and walnut.',h:'Oloroso or PX sherry cask maturation'},
+{l:'Peat smoke appears early, supported by iodine and ash.',h:'Islay-style peated malt character'},
+{l:'Floral top notes with a cereal-driven core.',h:'Lighter malt with elegant floral lift'},
+{l:'Estery fruit notes are prominent at first nosing.',h:'Pot-still character; fermentation esters'},
+{l:'Toasted oak and spice become clearer with air.',h:'Benefits from resting in the glass'},
+{l:'A balanced nose of malt, fruit, and cask spice.',h:'Well-integrated, no single element dominates'},
+{l:'Slight sulfur note on opening, then dried fruit.',h:'Sherry cask; sulfur often dissipates with air'},
+{l:'Sweet entry on the nose, developing into leather and tobacco.',h:'Initial sweetness gives way to aged complexity'},
+{l:'Coastal character with brine, smoke, and mineral notes.',h:'Maritime distillery influence'},
+{l:'Bourbon-cask profile: vanilla, coconut, and sweet oak.',h:'American oak first-fill characteristics'},
+{l:'Wine-cask influence shows red fruit and tannic grip aromatically.',h:'Red wine or port cask finishing'},
+{l:'Layered aroma with floral, fruity, and resinous elements.',h:'Multi-dimensional nose requiring time'},
+{l:'Nutty oxidation notes suggest sherry-seasoned oak.',h:'Sherried malt with oxidative aging'},
+{l:'Herbal freshness sits above a sweet malt base.',h:'Contrast between green notes and sweetness'},
+{l:'Peppery spice emerges after a short rest.',h:'Cask-derived spice or rye influence'},
+{l:'The nose is clean, expressive, and structurally balanced.',h:'High-quality distillate with good cask management'},
+{l:'Aromas intensify with dilution, especially fruit and spice.',h:'Benefits from adding water'}
+],
+emo:[
+{l:'The nose opens warm and welcoming, with honeyed sweetness.',h:'Immediately approachable and inviting'},
+{l:'A bright, lively aroma led by fresh fruit.',h:'Energetic and uplifting first impression'},
+{l:'Soft vanilla and oak create a comforting first impression.',h:'Familiar and reassuring qualities'},
+{l:'The smoke feels gentle, dry, and well integrated.',h:'Smoke as companion, not protagonist'},
+{l:'There is a calm coastal freshness beneath the sweetness.',h:'Seaside influence adding dimension'},
+{l:'The aroma feels layered and slowly unfolding.',h:'Rewards patience and repeated nosing'},
+{l:'A rich, mature nose with depth and warmth.',h:'Aged character expressing itself fully'},
+{l:'Floral notes lift the profile and keep it elegant.',h:'Lightness amid complexity'},
+{l:'The fruit feels ripe but not heavy.',h:'Balanced fruitiness without excess'},
+{l:'Oak spice adds shape without overpowering the nose.',h:'Structural support from the cask'},
+{l:'A slightly rustic note gives character and complexity.',h:'Earthy, authentic quality'},
+{l:'The sherry influence feels deep, dark, and rounded.',h:'Enveloping dried-fruit richness'},
+{l:'Fresh citrus keeps the aroma focused and energetic.',h:'Bright element cutting through richness'},
+{l:'The nose feels polished and composed.',h:'Well-made spirit showing refinement'},
+{l:'A mellow sweetness sits at the center of the aroma.',h:'Sweet core surrounded by supporting notes'},
+{l:'Smoke and sweetness move together in balance.',h:'Harmonious pairing of contrasts'},
+{l:'The profile feels expressive, warm, and quietly complex.',h:'Understated sophistication'},
+{l:'It opens gradually, revealing more detail with time.',h:'A nose that evolves and deepens'},
+{l:'The aroma is clean yet full of personality.',h:'Purity with character'},
+{l:'A rounded, atmospheric nose with a long presence.',h:'Lingers in the air around the glass'}
+],
+poem:[
+{l:'Honey and light oak rise first, like a room warming at dusk.',h:'Gentle warmth building slowly'},
+{l:'The nose opens with fruit and quiet gold.',h:'A visual and aromatic unity'},
+{l:'Smoke drifts through the sweetness like a distant fire.',h:'Background peat lending depth'},
+{l:'Citrus flickers at the edge, bright and brief.',h:'A momentary flash of brightness'},
+{l:'A soft malt note sits underneath, steady as woodgrain.',h:'The reliable foundation of the spirit'},
+{l:'Sherry fruits gather in the glass like dried autumn petals.',h:'Seasonal beauty in aged fruit'},
+{l:'Vanilla moves gently through the nose, pale and familiar.',h:'Comforting and ever-present'},
+{l:'Coastal salt and smoke arrive like wind off stone.',h:'The distillery environment in the glass'},
+{l:'The aroma unfolds in slow layers, each dimming into the next.',h:'A gradual, meditative revelation'},
+{l:'Oak spice appears like a line of warmth through shadow.',h:'A streak of heat in a cool profile'},
+{l:'Floral notes lift, then fade, leaving honey and grain behind.',h:'Beauty that passes, leaving warmth'},
+{l:'A dark-fruited hush settles over the glass.',h:'Rich, quiet intensity'},
+{l:'Smoke, ash, and sweetness speak in turns.',h:'A rotating conversation of flavors'},
+{l:'The nose feels old, warm, and quietly alive.',h:'Aged spirit still expressing vitality'},
+{l:'Citrus and malt meet like morning light on a wooden table.',h:'Simple beauty in a daily ritual'},
+{l:'Dried fruit and spice linger like the scent of an opened cabinet.',h:'Old memories released into the air'},
+{l:'The aroma deepens with air, as if the glass remembers more.',h:'Time and air unlocking memory'},
+{l:'A thread of brine runs through the sweetness.',h:'Salt stitching sweet and savory together'},
+{l:'Oak and fruit fold together into a low, amber glow.',h:'Integration so complete it becomes one'},
+{l:'The nose arrives slowly, then stays like evening music.',h:'Patience rewarded with persistent beauty'}
+]}};
+
+function buildOptsP2(arr){let h='<option value="">'+(LANG_P2==='ja'?'💡 プルダウンを選ぶとヒントが表示されます':'💡 Select to see hints')+'</option>';arr.forEach(d=>{h+=`<option value="${escAP2(d.l)}" data-hint="${escAP2(d.h)}">${escP2(d.l)}</option>`;});return h;}
+function buildAromaOptsP2(arr){let h='<option value="">'+(LANG_P2==='ja'?'💡 プルダウンを選ぶとヒントが表示されます':'💡 Select to see hints')+'</option>';let curG='';arr.forEach(d=>{if(d.g&&d.g!==curG){if(curG)h+='</optgroup>';h+=`<optgroup label="${escP2(d.g)}">`;curG=d.g;}h+=`<option value="${escAP2(d.l)}" data-hint="${escAP2(d.h)}">${escP2(d.l)}</option>`;});if(curG)h+='</optgroup>';return h;}
+
+function renderModesP2(secNum){
+  const sw=document.getElementById('mode-sw-'+secNum);if(!sw)return;
+  const u=UI_P2[LANG_P2];const mk=['real','emo','poem'];let h='';
+  mk.forEach((m,i)=>{const active=(m===MODE_P2[secNum])?' active':'';h+=`<button class="mode-btn-p2${active}" onclick="switchModeP2('${secNum}','${m}',this)">${u.modes[i]}<span class="mode-label-p2">${u.modeSub[i]}</span></button>`;});
+  sw.innerHTML=h;
+}
+function switchModeP2(secNum,mode,btn){MODE_P2[secNum]=mode;btn.parentElement.querySelectorAll('.mode-btn-p2').forEach(b=>b.classList.remove('active'));btn.classList.add('active');populateP2(secNum);}
+function populateP2(secNum){
+  const sel=document.getElementById('sel-'+secNum);const m=MODE_P2[secNum]||'real';
+  if(secNum==='03'){const d=D03[LANG_P2];if(LANG_P2==='ja'){sel.innerHTML=buildAromaOptsP2(d.real);}else{sel.innerHTML=buildOptsP2(d[m]||d.real);}}
+}
+function refreshAllP2(){
+  const u=UI_P2[LANG_P2];
+  document.getElementById('ui-t03').innerHTML=u.t03;
+  document.getElementById('ui-sh03').textContent=u.sh03;
+  const sw03=document.getElementById('mode-sw-03');
+  if(LANG_P2==='en'){sw03.style.display='flex';renderModesP2('03');}else{sw03.style.display='none';}
+  populateP2('03');
+}
+function toggleSectionP2(header){const body=header.nextElementSibling;const icon=header.querySelector('.toggle-icon-p2');const open=body.style.display==='block';body.style.display=open?'none':'block';icon.style.transform=open?'rotate(0)':'rotate(180deg)';}
+function addFromSelectP2(selId,tagsId){const sel=document.getElementById(selId);if(!sel.value)return;addTagP2(tagsId,sel.value,false);sel.value='';}
+function addFreeP2(inputId,tagsId){const input=document.getElementById(inputId);const word=input.value.trim();if(!word)return;addTagP2(tagsId,word,true);input.value='';}
+function addTagP2(tagsId,word,isFree){const c=document.getElementById(tagsId);if(Array.from(c.querySelectorAll('.sel-tag-p2')).some(t=>t.dataset.word===word))return;const tag=document.createElement('span');tag.className='sel-tag-p2'+(isFree?' free-tag':'');tag.dataset.word=word;tag.innerHTML=`${escP2(word)}<button class="sel-tag-remove-p2" onclick="this.closest('.sel-tag-p2').remove()">×</button>`;c.appendChild(tag);}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = () => {
+  radarChart = echarts.init(document.getElementById('radar-chart'));
+  sunburstChart = echarts.init(document.getElementById('sunburst-chart'));
+  treeChart = echarts.init(document.getElementById('tree-chart'));
+  initUI();
+  updateCharts();
+  refreshAllP2();
+};
+window.onresize = () => {
+  if(radarChart)radarChart.resize();if(sunburstChart)sunburstChart.resize();if(treeChart)treeChart.resize();
+  document.getElementById('swipe-container-w').scrollTo({left:window.currentPageIndex*window.innerWidth});
+};
+</script>
+
+<!-- ===== Firestore 連携 & ナビゲーション ===== -->
+<script>
+(function(){
+  const API_URL = '/api/firestore';
+
+  function getSessionId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session') || localStorage.getItem('amber_session_id') || null;
+  }
+  function setSessionId(id) { localStorage.setItem('amber_session_id', id); }
+  const SESSION_ID = getSessionId();
+  if (SESSION_ID) setSessionId(SESSION_ID);
+
+  // Step3のデータを収集
+  function collectStep3Data() {
+    // アロマスコア
+    const scores = {};
+    Object.keys(selectedScores).forEach(k => {
+      if (selectedScores[k] > 0) scores[k] = selectedScores[k];
+    });
+
+    // Step2（言語化）のタグも収集
+    const tags = {};
+    document.querySelectorAll('[id^="tags-"]').forEach(container => {
+      const tagList = Array.from(container.querySelectorAll('.sel-tag-p2,.sel-tag')).map(t => ({
+        word: t.dataset.word,
+        isFree: t.classList.contains('free-tag')
+      }));
+      if (tagList.length) tags[container.id] = tagList;
+    });
+
+    return { selectedScores: scores, tags };
+  }
+
+  // Firestoreに保存
+  async function saveStep3() {
+    if (!SESSION_ID) { console.warn('Step3: SESSION_ID is null, skip save'); return; }
+    try {
+      const step3Data = collectStep3Data();
+      console.log('Step3 saving:', JSON.stringify(step3Data).slice(0, 200));
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          docId: SESSION_ID,
+          data: { step3: step3Data, currentStep: 3 }
+        })
+      });
+      const result = await resp.json();
+      console.log('Step3 save result:', result);
+      if (!resp.ok) throw new Error('Save failed: ' + JSON.stringify(result));
+    } catch(e) { console.error('Step3 save error:', e); }
+  }
+
+  // Firestoreからデータを復元
+  async function loadStep3() {
+    if (!SESSION_ID) return;
+    try {
+      const resp = await fetch(API_URL + '?doc=' + SESSION_ID);
+      const result = await resp.json();
+      if (!result.exists || !result.data || !result.data.step3) return;
+      const s = result.data.step3;
+
+      // アロマスコアを復元
+      if (s.selectedScores) {
+        Object.keys(s.selectedScores).forEach(k => {
+          selectedScores[k] = s.selectedScores[k];
+        });
+        // UIを更新
+        if (typeof updateCharts === 'function') updateCharts();
+        // 各ボタンを更新
+        document.querySelectorAll('.aroma-btn-w').forEach(btn => {
+          const dataId = btn.dataset?.id;
+          if (dataId && selectedScores[dataId]) {
+            const score = selectedScores[dataId];
+            btn.classList.remove('s0','s1','s2','s3','s4','s5');
+            btn.classList.add('s' + score);
+          }
+        });
+      }
+    } catch(e) { console.error('Step3 load error:', e); }
+  }
+
+  // ナビゲーションバーを追加
+  const navHtml = `
+    <div style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;z-index:9999;">
+      <div style="display:flex;gap:8px;padding:12px 16px;max-width:480px;width:100%;background:linear-gradient(0deg,rgba(42,22,16,0.95) 70%,transparent);">
+        <a href="/step2/${SESSION_ID ? '?session='+SESSION_ID : ''}" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,0.1);color:#e8b96a;text-align:center;text-decoration:none;font-size:13px;font-weight:700;">← Step 2</a>
+        <button id="saveStep3Btn" style="flex:2;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#c8882a,#e8b96a);color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;">Step 4 へ →</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', navHtml);
+
+  // Step4へ進むボタン
+  document.getElementById('saveStep3Btn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveStep3Btn');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+    await saveStep3();
+    window.location.href = '/step4/' + (SESSION_ID ? '?session=' + SESSION_ID : '');
+  });
+
+  // ページ離脱時も保存
+  window.addEventListener('beforeunload', () => { saveStep3(); });
+
+  // 初期読み込み
+  loadStep3();
+})();
+</script>
+</body>
+</html>

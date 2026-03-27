@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Amber Nexus — Whisky Tasting App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wood-bg: #2a1610;
+      --amber: #c8882a;
+      --amber-light: #e8b96a;
+      --amber-pale: #f5e4c0;
+      --paper: #f5f0e8;
+      --deep: #3a2810;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--wood-bg);
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.10) 2px, rgba(0,0,0,0.10) 4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .container {
+      max-width: 420px;
+      width: 100%;
+      padding: 40px 24px;
+      text-align: center;
+    }
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--amber-light);
+      letter-spacing: 3px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 12px;
+      color: var(--amber);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+    .divider {
+      width: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--amber), transparent);
+      margin: 0 auto 40px;
+    }
+    .menu-btn {
+      display: block;
+      width: 100%;
+      padding: 18px 24px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+      letter-spacing: 1px;
+      text-decoration: none;
+      text-align: center;
+    }
+    .menu-btn:active { transform: scale(0.97); }
+    .btn-new {
+      background: linear-gradient(135deg, var(--amber), var(--amber-light));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(200, 136, 42, 0.4);
+      font-size: 16px;
+      padding: 20px 24px;
+    }
+    .btn-new:hover { box-shadow: 0 6px 24px rgba(200, 136, 42, 0.5); }
+    .btn-continue {
+      background: rgba(255,255,255,0.08);
+      color: var(--amber-light);
+      border: 1px solid rgba(200, 136, 42, 0.3);
+    }
+    .btn-continue:hover { background: rgba(255,255,255,0.12); }
+    .btn-dashboard {
+      background: rgba(255,255,255,0.05);
+      color: var(--amber-pale);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-dashboard:hover { background: rgba(255,255,255,0.1); }
+    .btn-icon { margin-right: 8px; }
+    .session-info {
+      margin-top: 20px;
+      font-size: 11px;
+      color: rgba(200, 136, 42, 0.5);
+    }
+    #continueBtn { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Amber Nexus</div>
+    <div class="subtitle">Whisky Tasting Journal</div>
+    <div class="divider"></div>
+
+    <a class="menu-btn btn-new" href="/step1/">
+      <span class="btn-icon">🥃</span>新しいテイスティングを始める
+    </a>
+
+    <a class="menu-btn btn-continue" id="continueBtn" href="/step1/">
+      <span class="btn-icon">✏️</span>前回の続きから
+    </a>
+
+    <a class="menu-btn btn-dashboard" href="/dashboard/">
+      <span class="btn-icon">📊</span>Dashboard
+    </a>
+
+    <a class="menu-btn btn-dashboard" href="/palette/">
+      <span class="btn-icon">🎨</span>Amber Palette
+    </a>
+
+    <div class="session-info" id="sessionInfo"></div>
+  </div>
+
+  <script>
+    // 進行中のセッションがあれば「続きから」ボタンを表示
+    const sessionId = localStorage.getItem('amber_session_id');
+    if (sessionId) {
+      const btn = document.getElementById('continueBtn');
+      btn.style.display = 'block';
+
+      // セッションの進行状況を取得
+      fetch('/api/firestore?doc=' + sessionId)
+        .then(r => r.json())
+        .then(result => {
+          if (result.exists && result.data) {
+            const d = result.data;
+            const step = d.currentStep || 1;
+            const brand = d.step1?.brand || '';
+            const status = d.status || 'draft';
+
+            if (status === 'completed') {
+              btn.innerHTML = '<span class="btn-icon">📋</span>前回の記録を確認する';
+              btn.href = '/step5/?session=' + sessionId;
+            } else {
+              const stepUrls = {1:'/step1/',2:'/step2/',3:'/step3/',4:'/step4/',5:'/step5/'};
+              btn.href = (stepUrls[step] || '/step1/') + '?session=' + sessionId;
+              btn.innerHTML = `<span class="btn-icon">✏️</span>続き${brand ? '（' + brand + '）' : ''} — Step ${step}から`;
+            }
+            document.getElementById('sessionInfo').textContent = 'Session: ' + sessionId.slice(0,8) + '...';
+          } else {
+            // セッションが見つからない場合はクリア
+            localStorage.removeItem('amber_session_id');
+            btn.style.display = 'none';
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 新しいテイスティングはセッションとドラフトをクリアしてStep1へ
+    document.querySelector('.btn-new').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('amber_session_id');
+      localStorage.removeItem('amberNexusStep1Draft');
+      window.location.href = '/step1/?new=1';
+    });
+  </script>
+</body>
+</html>
